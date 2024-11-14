@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import requests
@@ -21,12 +22,14 @@ model = genai.GenerativeModel(
     generation_config=generation_config,
 )
 
-# Avvio della sessione di chat
-chat_session = model.start_chat(
-    history=[
-        # Puoi aggiungere qui eventuali messaggi iniziali
-    ]
-)
+chat = model.start_chat()
+
+# # Avvio della sessione di chat
+# chat_session = model.start_chat(
+#     history=[
+#         # Puoi aggiungere qui eventuali messaggi iniziali
+#     ]
+# )
 
 def clean_message(message):
     # Rimuovi caratteri speciali non supportati
@@ -52,11 +55,30 @@ def send_to_nao(message):
     else:
         print("Errore nell'invio del messaggio:", response.json())
 
+def save_chat_history_to_file(filename="./tmp/chat_history.txt"):
+    with open(filename, "w") as file:
+        for message in chat.history:
+            file.write(f"{message}")
 
-# Genera una risposta e inviala al robot NAO
-user_input = "Ciao, come stai oggi?"  # Inserisci qui la frase desiderata
-response = chat_session.send_message(user_input)
+# Funzione per inviare messaggi alla chat
+def send_message_to_gemini(message):
+    response = chat.send_message(message)
+    save_chat_history_to_file()
+    return response.text
 
-# Stampa e invia la risposta generata al robot
-print("Risposta generata:", response.text)
-send_to_nao(response.text)
+
+
+#send_to_nao(response.text)
+
+
+if __name__ == '__main__':
+    print("Inizia la chat con Gemini (scrivi 'exit' per terminare):")
+
+    while True:
+        user_input = input("Tu: ")
+        if user_input.lower() == 'exit':
+            print("Chat terminata.")
+            break
+
+        response_text = send_message_to_gemini(user_input)
+        print(f"Gemini: {response_text}")

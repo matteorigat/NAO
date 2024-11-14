@@ -1,15 +1,32 @@
-import requests
+import os
+import time
+import serverLLM
+from flask import Flask
 
-# URL dell'endpoint request_analysis sul server Gemini
-url = "http://localhost:6667/request_analysis"
+app = Flask(__name__)
 
-try:
-    # Effettua una richiesta GET per attivare l'analisi dell'immagine
-    response = requests.get(url)
+def main():
 
-    if response.status_code == 200:
-        print("Descrizione dell'immagine:", response.json().get("description"))
-    else:
-        print("Errore:", response.json().get("error", "Errore sconosciuto"))
-except Exception as e:
-    print("Errore durante la richiesta:", e)
+    #os.makedirs("./tmp", exist_ok=True)
+    audio_path = "./tmp/received_audio.ogg"
+
+    serverLLM.say("Ciao, Come posso aiutarti?")
+
+    while True:
+        print("Richiesta audio...")
+        serverLLM.request_audio()
+        print("Richiesta audio completata.")
+        if os.path.isfile(audio_path):
+            print("Analisi audio")
+            response = serverLLM.analyze_audio(audio_path)
+            print("Risposta: ", response)
+            serverLLM.say(response)
+            print("Risposta inviata.")
+            os.remove(audio_path)
+
+
+
+
+if __name__ == '__main__':
+    app.run(host="127.0.0.1", port=6667)
+    main()
