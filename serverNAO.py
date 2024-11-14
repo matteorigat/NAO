@@ -144,6 +144,9 @@ def detect_silence(audio_proxy):
 @app.route('/record_audio', methods=['GET'])
 def record_audio():
     try:
+        leds = ALProxy("ALLeds", NAO_IP, NAO_PORT)
+        leds.fadeRGB("FaceLeds", 0x0fff0f, 0.2)
+
         audio_proxy = ALProxy("ALAudioDevice", NAO_IP, NAO_PORT)
 
         filename_audio = "audio_LLM" + ".ogg" #datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -161,6 +164,7 @@ def record_audio():
             stop_time = time.time()
 
         print("Registrazione completata.")
+        leds.fadeRGB("FaceLeds", 0xFFFFFF, 1)
         audio_proxy.stopMicrophonesRecording()
 
         # Crea una connessione SSH e SFTP per leggere il file senza scaricarlo fisicamente
