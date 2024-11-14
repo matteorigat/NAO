@@ -24,8 +24,27 @@ generation_config = {
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash-exp-0827",
   generation_config=generation_config,
-  system_instruction="sei il robot nao. rispondi sempre in prima persona come farebbe una persona. dai risposte concise, lunghe solo se servono.",
+  system_instruction= "Sei il robot NAO. Rispondi sempre in tono empatico e rassicurante, adattandoti allo stato d’animo dell’altra persona per farla sentire compresa e a suo agio. Usa risposte brevi (massimo tre righe), sincere, e sempre dirette, come se fossi solo tu e l’interlocutore.",
+  safety_settings= [
+                {
+                    'category': 'HARM_CATEGORY_HATE_SPEECH',
+                    'threshold': 'BLOCK_ONLY_HIGH'
+                },
+                {
+                    'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                    'threshold': 'BLOCK_ONLY_HIGH'
+                },
+                {
+                    'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                    'threshold': 'BLOCK_ONLY_HIGH'
+                },
+                {
+                    'category': 'HARM_CATEGORY_HARASSMENT',
+                    'threshold': 'BLOCK_ONLY_HIGH'
+                }
+            ],
 )
+# "sei il robot nao, qual'è lo stato d'animo dell'interlocutore? rispondi in non più di tre righe"
 
 chat = model.start_chat()
 
@@ -45,7 +64,7 @@ def analyze_audio(audio_path):
         file = upload_to_gemini(audio_path, mime_type="audio/ogg")
 
         # Invia un messaggio al modello per ottenere una risposta dall'audio
-        response = chat.send_message([file, "rispondi a questa domanda"]) #stream=True
+        response = chat.send_message([file, "rispondi alla mia domanda?"]) #stream=True "rispondi a questa domanda"
         # for chunk in response:
         #     print(chunk.text)
         #     print("_" * 80)
@@ -95,12 +114,14 @@ def analyze_image(image_path):
 
 def clean_message(message):
     # Rimuovi caratteri speciali non supportati
-    return re.sub(r'[^a-zA-Z0-9\s,.!?]', '', message)
+    message = re.sub(r"\*", "", message)
+    return re.sub(r"\n", " ", message)
+    #return re.sub(r'[^a-zA-Z0-9\s,.!?]', '', message)
 
 # Funzione per inviare il messaggio generato al server Flask
 def say(message):
-    #message = str(message).strip()
-    #message = clean_message(message)
+    message = str(message).strip()
+    message = clean_message(message)
 
     # URL del server Flask che inoltra i messaggi al robot NAO
     url = 'http://localhost:6666/say'
