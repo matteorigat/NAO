@@ -2,12 +2,15 @@
 import os
 import base64
 import re
-from io import BytesIO
+import subprocess
+
 import cv2
 import google.generativeai as genai
 import numpy as np
-from flask import Flask, request, jsonify
+# from flask import Flask, request, jsonify
 import requests
+import speech_recognition as sr
+import time
 
 
 # Configura l'API key di Gemini
@@ -24,7 +27,7 @@ generation_config = {
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash-exp-0827",
   generation_config=generation_config,
-  system_instruction= "Sei il robot NAO. Rispondi sempre in tono empatico e rassicurante, adattandoti allo stato d’animo dell’altra persona per farla sentire compresa e a suo agio. Usa risposte brevi (massimo tre righe), sincere, e sempre dirette, come se fossi solo tu e l’interlocutore.",
+  system_instruction= "Sei il robot NAO. Rispondi sempre adattandoti allo stato d’animo dell’altra persona. Usa risposte brevi e concise. parli con un solo interlocutore.",
   safety_settings= [
                 {
                     'category': 'HARM_CATEGORY_HATE_SPEECH',
@@ -64,7 +67,7 @@ def analyze_audio(audio_path):
         file = upload_to_gemini(audio_path, mime_type="audio/ogg")
 
         # Invia un messaggio al modello per ottenere una risposta dall'audio
-        response = chat.send_message([file, "rispondi alla mia domanda?"]) #stream=True "rispondi a questa domanda"
+        response = chat.send_message([file, "rispondi alla mia domanda"]) #stream=True "rispondi a questa domanda"
         # for chunk in response:
         #     print(chunk.text)
         #     print("_" * 80)
@@ -110,13 +113,14 @@ def analyze_image(image_path):
 ############   CHIAMATE A NAO   ############
 
 
-
-
 def clean_message(message):
-    # Rimuovi caratteri speciali non supportati
-    message = re.sub(r"\*", "", message)
-    return re.sub(r"\n", " ", message)
-    #return re.sub(r'[^a-zA-Z0-9\s,.!?]', '', message)
+    message = re.sub(r"[^a-zA-ZàèéìòùÀÈÉÌÒÙ0-9\s,.!?']", ",", message)
+    message = re.sub(r",*,+", ", ", message)
+    message = re.sub(r"\n", " ", message)
+    message = re.sub(r"\s+", " ", message)
+    message = message.strip()
+    print("Messaggio pulito:", message)
+    return message
 
 # Funzione per inviare il messaggio generato al server Flask
 def say(message):
@@ -182,26 +186,133 @@ def request_photo():
         print(f"Errore durante l'analisi dell'immagine: {e}")
 
 
+class NaoStream:
+
+    def __init__(self, audio_generator):
+        self.audio_generator = audio_generator
+
+    def read(self, size=-1):  # added size parameter, default -1
+        try:
+            return next(self.audio_generator)
+        except StopIteration:
+            return b''
+
+
+class NaoAudioSource(sr.AudioSource):
+
+    def __init__(self, server_url="http://localhost:6666"):
+        self.server_url = server_url
+        self.stream = None
+        self.is_listening = False
+        self.CHUNK = 1365  # number of samples per audio chunk
+        self.SAMPLE_RATE = 16000  # 16 kHz
+        self.SAMPLE_WIDTH = 2  # each audio sample is 2 bytes
+
+    def __enter__(self):  # this is called when using the "with" statement
+        requests.post(f"{self.server_url}/start_listening")
+        self.is_listening = True
+        self.stream = NaoStream(self.audio_generator())  # wrap the generator
+        return self  # return object (self) to be used in the with statement
+
+    def audio_generator(self):  # generator function that continuously fetches audio chunks from the server as long as 'self.is_listening' is True
+
+        sampling_frequency = 16000  # 16 kHz
+        number_of_samples_per_chunk = 1365
+        time_between_audio_chunks = number_of_samples_per_chunk / sampling_frequency  # in seconds
+        corrected_time_between_audio_chunks = time_between_audio_chunks * 0.8
+
+        while self.is_listening:
+            response = requests.get(f"{self.server_url}/get_audio_chunk")
+            yield response.content  # yield is used to return a value from a generator function, but unlike return, it doesn't terminate the function -> instead, it suspends the function and saves its state for later resumption
+            current_buffer_length = requests.get(f"{self.server_url}/get_server_buffer_length").json()["length"]
+            correcting_factor = 1.0 / (1.0 + np.exp(
+                current_buffer_length - np.pi))  # if buffer becomes long, the time between audio chunks is decreased
+            corrected_time_between_audio_chunks = time_between_audio_chunks * correcting_factor
+            time.sleep(corrected_time_between_audio_chunks)  # wait for the next audio chunk to be available
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.is_listening = False
+        requests.post(f"{self.server_url}/stop_listening")
+
+def convert_to_ogg(input_wav, output_ogg):
+    try:
+        # Usa FFmpeg per convertire WAV in OGG
+        subprocess.run(
+            ["ffmpeg", "-i", input_wav, "-c:a", "libvorbis", "-qscale:a", "5", output_ogg, "-y"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print(f"Converted {input_wav} to {output_ogg}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during conversion: {e}")
+
 def request_audio():
+    recognizer = sr.Recognizer()
+    recognizer.pause_threshold = 1  # seconds of non-speaking audio before a phrase is considered complete
+    recognizer.operation_timeout = 4  # increasing the timeout duration
+    audio_data = None
+    audio_path_wav = "./tmp/received_audio.wav"
+    audio_path = "./tmp/received_audio.ogg"
 
-    # Fai la richiesta GET per ottenere l'audio
-    response = requests.get("http://127.0.0.1:6666/record_audio")
+    # sleep_time = 0.1  # in seconds
 
-    if response.status_code == 200:
-        # Estrai la stringa base64 dalla risposta JSON
-        data = response.json()
-        audio_base64 = data.get("audio")
+    while True:
+        # record audio only if it hasn't been recorded yet
+        if audio_data is None:
+            with NaoAudioSource() as source:
+                print("Recording...")
+                start_time = time.time()
+                audio_data = recognizer.listen(source, phrase_time_limit=10, timeout=None)
+                with open(audio_path_wav, "wb") as f:
+                    f.write(audio_data.get_wav_data())
+                print(f"Recording took {time.time() - start_time} seconds")
+                start_time = time.time()
+                convert_to_ogg(audio_path_wav, audio_path)
+                print(f"Converting took {time.time() - start_time} seconds")
+                return
 
-        if audio_base64:
-            # Decodifica la stringa base64 in dati binari
-            audio_data = base64.b64decode(audio_base64)
+        # # transcribe audio to text
+        # try:
+        #     print("Transcribing...")
+        #     start_time = time.time()
+        #     text = recognizer.recognize_google(audio_data, language="it-IT")
+        #     print(f"Transcribing took {time.time() - start_time} seconds")
+        #     print("You said: " + text)
+        #     return text
+        # except (sr.RequestError, URLError, ConnectionResetError) as e:
+        #     print(f"Network error: {e}, retrying after a short delay...")
+        #     time.sleep(sleep_time)  # adding a delay before retrying
+        # except sr.UnknownValueError:
+        #     print("Google Speech Recognition could not understand audio, retrying...")
+        #     audio_data = None  # reset audio_data to record again
+        # except TimeoutError as e:
+        #     print(f"Operation timed out: {e}, retrying after a short delay...")
+        #     audio_data = None  # reset audio_data to record again
 
-            # Scrivi i dati audio in un file .ogg
-            with open("./tmp/received_audio.ogg", "wb") as audio_file:
-                audio_file.write(audio_data)
 
-            return "File audio ricevuto e salvato come 'received_audio.ogg'."
-        else:
-            return "Errore: Non è stato trovato l'audio nella risposta."
-    else:
-        return f"Errore nella richiesta: {response.status_code}"
+
+
+# def request_audio():
+#
+#     # Fai la richiesta GET per ottenere l'audio
+#     response = requests.get("http://127.0.0.1:6666/record_audio")
+#
+#     if response.status_code == 200:
+#         # Estrai la stringa base64 dalla risposta JSON
+#         data = response.json()
+#         audio_base64 = data.get("audio")
+#
+#         if audio_base64:
+#             # Decodifica la stringa base64 in dati binari
+#             audio_data = base64.b64decode(audio_base64)
+#
+#             # Scrivi i dati audio in un file .ogg
+#             with open("./tmp/received_audio.ogg", "wb") as audio_file:
+#                 audio_file.write(audio_data)
+#
+#             return "File audio ricevuto e salvato come 'received_audio.ogg'."
+#         else:
+#             return "Errore: Non è stato trovato l'audio nella risposta."
+#     else:
+#         return f"Errore nella richiesta: {response.status_code}"
