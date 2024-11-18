@@ -1,82 +1,113 @@
+from flask import Flask, request, jsonify
+from naoqi import ALProxy, ALModule, ALBroker
 import time
-import paramiko
-from datetime import datetime
-from naoqi import ALProxy
 
-# Configurazione della connessione con il robot NAO
-#NAO_IP = "127.0.0.1"
+app = Flask(__name__)
+
+nao = True
 NAO_IP = "192.168.1.166"
 NAO_PORT = 9559
+sleep_time = 0.01
 
-NAO_USERNAME = "nao"
-NAO_PASSWORD = "2468"
-
-def download_file(file_path_on_nao, local_filename):
-    try:
-        # Crea una connessione SSH con il robot
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(NAO_IP, username=NAO_USERNAME, password=NAO_PASSWORD)
-
-        # Usa SFTP per scaricare il file
-        sftp = ssh.open_sftp()
-        sftp.get(file_path_on_nao, "./tmp/" +local_filename)  # Scarica il file con il nome locale
-        sftp.close()
-        ssh.close()
-
-        print("File " + local_filename +" scaricato con successo!")
-
-    except Exception as e:
-        print("Errore durante il download del file: ", e)
+tts = ALProxy("ALTextToSpeech", NAO_IP, NAO_PORT)
+tts.setVolume(1.0)  # define volume of the robot
+animatedSpeech = ALProxy("ALAnimatedSpeech", NAO_IP, NAO_PORT)
 
 
-def detect_silence(audio_proxy):
-    audio_proxy.enableEnergyComputation()
+class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio
+    """
+    This is a custom module built on top of NAOqi framework for managing audio capture from NAO's microphones.
+    It extends ALModule class from the NAOqi framework and defines methods to to start and stop audio capture, process audio data, and retrieve audio chunks.
+    """
 
-    # Soglia di energia per considerare il silenzio
-    silence_threshold = 500  # 300 è buono
+    def __init__(self, name):
+        ALModule.__init__(self, name)
+        self.audio_device = ALProxy("ALAudioDevice", NAO_IP, NAO_PORT)
+        self.is_listening = False
+        self.buffers = []
 
-    # Durata minima del silenzio in secondi
-    silence_duration = 2  # Durata del silenzio per considerarlo rilevante
+    def start_listening(self):
+        self.audio_device.setClientPreferences(self.getName(), 16000, 3,
+                                               0)  # sample rate of 16000 Hz, channelparam 3 (front channel), and a deinterleaving flag of 0 (only relevant for channelparam 0 (all channels))
+        self.audio_device.subscribe(self.getName())
+        self.is_listening = True
 
-    start_time = time.time()  # Tempo di inizio
-    while True:
-        # Ottieni l'energia dei microfoni
-        front_energy = audio_proxy.getFrontMicEnergy()
-        left_energy = audio_proxy.getLeftMicEnergy()
-        right_energy = audio_proxy.getRightMicEnergy()
-        rear_energy = audio_proxy.getRearMicEnergy()
+    def stop_listening(self):
+        self.audio_device.unsubscribe(self.getName())
+        self.is_listening = False
 
-        # Calcola l'energia media dei microfoni
-        average_energy = (front_energy + left_energy + right_energy + rear_energy) / 4.0
+    def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp,
+                      inputBuffer):  # callback method that is triggered whenever new audio data is available
+        # print("received audio data from NAO with the following parameters: nbOfChannels = " + str(
+        #     nbOfChannels) + ", nbOfSamplesByChannel = " + str(nbOfSamplesByChannel) + ", timeStamp = " + str(
+        #     timeStamp[0]) + " sec " + str(timeStamp[1]) + " musec" + ", length of inputBuffer = " + str(
+        #     len(inputBuffer)))
+        if self.is_listening:
+            self.buffers.append(inputBuffer)
 
-        if average_energy < silence_threshold:
-            if time.time() - start_time > silence_duration:
-                print("Silenzio rilevato!")
-                break  # Rilevato il silenzio, esci dal ciclo
+    def get_audio_chunk(self):
+        if self.buffers:
+            return self.buffers.pop(0)  # return the oldest audio chunk
         else:
-            start_time = time.time()  # Reset del timer se viene rilevato un suono
-
-        time.sleep(0.1)  # Pausa per evitare sovraccarico CPU
-
-def record_audio():
-    try:
-        audio_proxy = ALProxy("ALAudioDevice", NAO_IP, NAO_PORT)
-
-        filename_audio = "audio_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".wav"
-        file_path_on_nao = "/home/nao/recordings/" + filename_audio
-
-        audio_proxy.startMicrophonesRecording(file_path_on_nao)
+            print("no audio data available")
+            return None
 
 
-        detect_silence(audio_proxy)
-        print("Registrazione completata.")
-        audio_proxy.stopMicrophonesRecording()
+try:
+    pythonBroker = ALBroker("pythonBroker", "0.0.0.0", 0, NAO_IP, NAO_PORT)  # broker connection: essential for communicating between the module and the NAOqi runtime
+    global AudioCapture
+    AudioCapture = AudioCaptureModule("AudioCapture")  # create an instance of the AudioCaptureModule class
+    print("AudioCapture module initialized")
+except RuntimeError:
+    print("Error initializing broker!")
+    exit(1)
 
-        download_file(file_path_on_nao, filename_audio)
 
-    except Exception as e:
-        print("Errore durante la registrazione: ", e)
+# server endpoints ====================================================================================================
 
-if __name__ == '__main__':
-    record_audio()
+@app.route("/talk", methods=["POST"])
+def talk():
+    print("Received a request to talk")
+    message = request.json.get("message")
+    # animatedSpeech.say(str(message))
+    tts.say(str(message))
+    return jsonify(success=True)
+
+
+@app.route("/start_listening", methods=["POST"])
+def start_listening():
+    # print("Received a request to start listening, current length of server buffer:", len(AudioCapture.buffers))
+    AudioCapture.start_listening()
+    return jsonify(success=True)
+
+
+@app.route("/stop_listening", methods=["POST"])
+def stop_listening():
+    # print("Received a request to stop listening, current length of server buffer:", len(AudioCapture.buffers))
+    AudioCapture.stop_listening()
+    return jsonify(success=True)
+
+
+@app.route("/get_audio_chunk", methods=["GET"])
+def get_audio_chunk():
+    # print("Received a request to get an audio chunk, current length of server buffer:", len(AudioCapture.buffers))
+    audio_data = AudioCapture.get_audio_chunk()
+    if audio_data is not None:
+        return audio_data  # send the audio data as a response
+    else:
+        print("Server buffer is empty, waiting for audio data...")
+        while audio_data is None:  # wait until audio data is available
+            audio_data = AudioCapture.get_audio_chunk()
+            time.sleep(sleep_time)
+        return audio_data
+
+
+@app.route("/get_server_buffer_length", methods=["GET"])
+def get_server_buffer_length():
+    # print("Received a request to print the length of the server buffer, current length of server buffer:",
+    #       len(AudioCapture.buffers))
+    return jsonify(length=len(AudioCapture.buffers))
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=6666)
