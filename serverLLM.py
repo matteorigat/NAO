@@ -3,6 +3,7 @@ import os
 import base64
 import re
 import subprocess
+import tempfile
 
 import cv2
 import google.generativeai as genai
@@ -11,6 +12,8 @@ import numpy as np
 import requests
 import speech_recognition as sr
 import time
+import noisereduce as nr
+import soundfile as sf
 
 
 # Configura l'API key di Gemini
@@ -27,7 +30,7 @@ generation_config = {
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash-exp-0827",
   generation_config=generation_config,
-  system_instruction= "Sei il robot NAO. Rispondi sempre adattandoti allo stato d’animo dell’altra persona. Usa risposte brevi e concise. parli con un solo interlocutore.",
+  system_instruction= "Sei il robot NAO. Rispondi sempre adattandoti allo stato d’animo dell’altra persona. Usa risposte brevi se possibile. parli con un solo interlocutore.",
   safety_settings= [
                 {
                     'category': 'HARM_CATEGORY_HATE_SPEECH',
@@ -60,14 +63,28 @@ def upload_to_gemini(path, mime_type=None):
   print(f"Uploaded file '{file.display_name}' as: {file.uri}")
   return file
 
+def wait_for_files_active(files):
+    for name in (file.name for file in files):
+        file = genai.get_file(name)
+        while file.state.name == "PROCESSING":
+          print(".", end="", flush=True)
+          time.sleep(10)
+          file = genai.get_file(name)
+        if file.state.name != "ACTIVE":
+          raise Exception(f"File {file.name} failed to process")
 
-def analyze_audio(audio_path):
+
+def analyze_audio(files):
     try:
         # Carica il file audio su Gemini
-        file = upload_to_gemini(audio_path, mime_type="audio/ogg")
-
+        #file = upload_to_gemini(audio_path, mime_type="audio/ogg")
+        #wait_for_files_active(files)
         # Invia un messaggio al modello per ottenere una risposta dall'audio
-        response = chat.send_message([file, "rispondi alla mia domanda"]) #stream=True "rispondi a questa domanda"
+        if isinstance(files, list):
+            wait_for_files_active(files)
+            response = chat.send_message([*files, "rispondi a questa domanda"])  # stream=True "rispondi a questa domanda"
+        else:
+            response = chat.send_message([files, "rispondi a questa domanda"])
         # for chunk in response:
         #     print(chunk.text)
         #     print("_" * 80)
@@ -76,36 +93,6 @@ def analyze_audio(audio_path):
 
     except Exception as e:
         return "Impossibile ottenere una descrizione dell'audio. " + str(e)
-
-
-def analyze_image(image_path):
-    try:
-        # Carica il file immagine su Gemini
-        file = upload_to_gemini(image_path, mime_type="image/jpeg")
-
-        # Avvia una sessione di chat con il modello
-        chat_session = model.start_chat(
-            history=[
-                {
-                    "role": "user",
-                    "parts": [
-                        file,
-                        "",
-                    ],
-                },
-            ]
-        )
-
-        # Invia un messaggio al modello per ottenere la descrizione dell'immagine
-        response = chat_session.send_message("Cosa vedi nell'immagine?")
-        # Restituisce la descrizione dell'immagine
-        return response.text
-
-    except Exception as e:
-        # Gestione degli errori
-        print(f"Errore durante l'analisi dell'immagine: {e}")
-        return "Impossibile ottenere una descrizione dell'immagine."
-
 
 
 
@@ -143,48 +130,6 @@ def say(message):
         print("Errore nell'invio del messaggio:", response.json())
 
 
-def request_photo():
-    try:
-        # Richiedi l'immagine dal server NAO
-        nao_response = requests.get("http://localhost:6666/capture_image")
-
-        if nao_response.status_code != 200:
-            print("Impossibile acquisire l'immagine dal robot NAO")
-
-        image_base64 = nao_response.json().get("image")
-        image_data = base64.b64decode(image_base64)
-
-        if not image_data:
-            print("Immagine vuota ricevuta dal server NAO.")
-
-
-        nparr = np.frombuffer(image_data, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        if image is None:
-            raise ValueError("Immagine non valida, impossibile decodificare.")
-
-        # Salva l'immagine come file .jpg
-        image_path = './tmp/image.jpg'
-        cv2.imwrite(image_path, image)
-
-        # Analizza l'immagine
-        description = analyze_image(image_path)
-
-        if description is None:
-            print("Impossibile ottenere una descrizione dell'immagine.")
-
-        #Invia la descrizione da pronunciare al server NAO
-        nao_say_response = requests.post("http://localhost:6666/say", json={"message": description})
-
-        if nao_say_response.status_code == 200:
-            print("Messaggio inviato con successo al robot NAO!", description)
-        else:
-            print("Impossibile far pronunciare il messaggio al robot NAO")
-
-    except Exception as e:
-        print(f"Errore durante l'analisi dell'immagine: {e}")
-
 
 class NaoStream:
 
@@ -219,14 +164,13 @@ class NaoAudioSource(sr.AudioSource):
         sampling_frequency = 16000  # 16 kHz
         number_of_samples_per_chunk = 1365
         time_between_audio_chunks = number_of_samples_per_chunk / sampling_frequency  # in seconds
-        corrected_time_between_audio_chunks = time_between_audio_chunks * 0.8
+        #corrected_time_between_audio_chunks = time_between_audio_chunks * 0.8
 
         while self.is_listening:
             response = requests.get(f"{self.server_url}/get_audio_chunk")
             yield response.content  # yield is used to return a value from a generator function, but unlike return, it doesn't terminate the function -> instead, it suspends the function and saves its state for later resumption
             current_buffer_length = requests.get(f"{self.server_url}/get_server_buffer_length").json()["length"]
-            correcting_factor = 1.0 / (1.0 + np.exp(
-                current_buffer_length - np.pi))  # if buffer becomes long, the time between audio chunks is decreased
+            correcting_factor = 1.0 / (1.0 + np.exp(current_buffer_length - np.pi))  # if buffer becomes long, the time between audio chunks is decreased
             corrected_time_between_audio_chunks = time_between_audio_chunks * correcting_factor
             time.sleep(corrected_time_between_audio_chunks)  # wait for the next audio chunk to be available
 
@@ -255,62 +199,142 @@ def request_audio():
     audio_path_wav = "./tmp/received_audio.wav"
     audio_path = "./tmp/received_audio.ogg"
 
-    # sleep_time = 0.1  # in seconds
-
     while True:
         # record audio only if it hasn't been recorded yet
         if audio_data is None:
             with NaoAudioSource() as source:
                 print("Recording...")
-                start_time = time.time()
+                #start_time = time.time()
                 audio_data = recognizer.listen(source, phrase_time_limit=10, timeout=None)
-                with open(audio_path_wav, "wb") as f:
-                    f.write(audio_data.get_wav_data())
-                print(f"Recording took {time.time() - start_time} seconds")
-                start_time = time.time()
-                convert_to_ogg(audio_path_wav, audio_path)
-                print(f"Converting took {time.time() - start_time} seconds")
-                return
+                #print(f"Recording took {time.time() - start_time} seconds")
 
-        # # transcribe audio to text
-        # try:
-        #     print("Transcribing...")
-        #     start_time = time.time()
-        #     text = recognizer.recognize_google(audio_data, language="it-IT")
-        #     print(f"Transcribing took {time.time() - start_time} seconds")
-        #     print("You said: " + text)
-        #     return text
-        # except (sr.RequestError, URLError, ConnectionResetError) as e:
-        #     print(f"Network error: {e}, retrying after a short delay...")
-        #     time.sleep(sleep_time)  # adding a delay before retrying
-        # except sr.UnknownValueError:
-        #     print("Google Speech Recognition could not understand audio, retrying...")
-        #     audio_data = None  # reset audio_data to record again
-        # except TimeoutError as e:
-        #     print(f"Operation timed out: {e}, retrying after a short delay...")
-        #     audio_data = None  # reset audio_data to record again
+                audio_duration = len(audio_data.frame_data) / source.SAMPLE_RATE
+                if audio_duration < 1:
+                    print("Audio troppo breve, riprovo...")
+                    audio_data = None
+                    continue
+
+                #start_time = time.time()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
+                    temp_wav_file.write(audio_data.get_wav_data())
+                    temp_wav_file.close()
+
+                    # noise reduction
+                    audio, sampling_rate = sf.read(temp_wav_file.name)
+                    reduced_audio = nr.reduce_noise(y=audio, sr=sampling_rate)
+
+                    with open(audio_path_wav, "wb") as f:
+                        sf.write(f, reduced_audio, sampling_rate)
+
+                    convert_to_ogg(audio_path_wav, audio_path)
+
+                    # print(f"Processing audio took {time.time() - start_time} seconds")
+                    start_time = time.time()
+                    file = upload_to_gemini(audio_path, mime_type="audio/ogg")
+                    print(f"Uploading audio took {time.time() - start_time} seconds")
+
+                    return file
 
 
 
+
+
+
+
+
+
+# def analyze_image(image_path):
+#     try:
+#         # Carica il file immagine su Gemini
+#         file = upload_to_gemini(image_path, mime_type="image/jpeg")
+#
+#         # Avvia una sessione di chat con il modello
+#         chat_session = model.start_chat(
+#             history=[
+#                 {
+#                     "role": "user",
+#                     "parts": [
+#                         file,
+#                         "",
+#                     ],
+#                 },
+#             ]
+#         )
+#
+#         # Invia un messaggio al modello per ottenere la descrizione dell'immagine
+#         response = chat_session.send_message("Cosa vedi nell'immagine?")
+#         # Restituisce la descrizione dell'immagine
+#         return response.text
+#
+#     except Exception as e:
+#         # Gestione degli errori
+#         print(f"Errore durante l'analisi dell'immagine: {e}")
+#         return "Impossibile ottenere una descrizione dell'immagine."
+
+
+
+
+
+
+
+
+# def request_photo():
+#     try:
+#         # Richiedi l'immagine dal server NAO
+#         nao_response = requests.get("http://localhost:6666/capture_image")
+#
+#         if nao_response.status_code != 200:
+#             print("Impossibile acquisire l'immagine dal robot NAO")
+#
+#         image_base64 = nao_response.json().get("image")
+#         image_data = base64.b64decode(image_base64)
+#
+#         if not image_data:
+#             print("Immagine vuota ricevuta dal server NAO.")
+#
+#
+#         nparr = np.frombuffer(image_data, np.uint8)
+#         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+#
+#         if image is None:
+#             raise ValueError("Immagine non valida, impossibile decodificare.")
+#
+#         image_path = './tmp/image.jpg'
+#         cv2.imwrite(image_path, image)
+#
+#         description = analyze_image(image_path)
+#
+#         if description is None:
+#             print("Impossibile ottenere una descrizione dell'immagine.")
+#
+#         nao_say_response = requests.post("http://localhost:6666/say", json={"message": description})
+#
+#         if nao_say_response.status_code == 200:
+#             print("Messaggio inviato con successo al robot NAO!", description)
+#         else:
+#             print("Impossibile far pronunciare il messaggio al robot NAO")
+#
+#     except Exception as e:
+#         print(f"Errore durante l'analisi dell'immagine: {e}")
 
 # def request_audio():
-#
+# 
 #     # Fai la richiesta GET per ottenere l'audio
 #     response = requests.get("http://127.0.0.1:6666/record_audio")
-#
+# 
 #     if response.status_code == 200:
 #         # Estrai la stringa base64 dalla risposta JSON
 #         data = response.json()
 #         audio_base64 = data.get("audio")
-#
+# 
 #         if audio_base64:
 #             # Decodifica la stringa base64 in dati binari
 #             audio_data = base64.b64decode(audio_base64)
-#
+# 
 #             # Scrivi i dati audio in un file .ogg
 #             with open("./tmp/received_audio.ogg", "wb") as audio_file:
 #                 audio_file.write(audio_data)
-#
+# 
 #             return "File audio ricevuto e salvato come 'received_audio.ogg'."
 #         else:
 #             return "Errore: Non è stato trovato l'audio nella risposta."
