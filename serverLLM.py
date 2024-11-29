@@ -1,17 +1,15 @@
 # Python 3.12 - Gemini Server
 import os
-import base64
 import re
 import subprocess
-import tempfile
 
 import cv2
 import google.generativeai as genai
 import numpy as np
-# from flask import Flask, request, jsonify
 import requests
 import speech_recognition as sr
 import time
+import threading
 import noisereduce as nr
 import soundfile as sf
 
@@ -28,9 +26,16 @@ generation_config = {
 }
 
 model = genai.GenerativeModel(
+  #model_name="gemini-1.5-flash-8b-exp-0924",
   model_name="gemini-1.5-flash-exp-0827",
   generation_config=generation_config,
-  system_instruction= "Sei il robot NAO. Rispondi sempre adattandoti allo stato d’animo dell’altra persona. Usa risposte brevi se possibile. parli con un solo interlocutore.",
+  system_instruction= """
+  Sei il robot Nao.
+  Rispondi alla domanda naturalmente e non ripetere mai le parole dell'altra persona.
+  Usa i token vocali [joy], [happy], [sad], [angry], [surprised], [fear], [calm] all’inizio di frasi o parole per cambiare tono di voce.
+  Usa il token [rst] quando vuoi riportare il tono a uno stato neutro.
+  Mantieni per lo più un tono neutrale ed utilizza il modello di Russell per gestire le 8 emozioni.
+  """,
   safety_settings= [
                 {
                     'category': 'HARM_CATEGORY_HATE_SPEECH',
@@ -50,45 +55,56 @@ model = genai.GenerativeModel(
                 }
             ],
 )
-# "sei il robot nao, qual'è lo stato d'animo dell'interlocutore? rispondi in non più di tre righe"
 
 chat = model.start_chat()
 
-def upload_to_gemini(path, mime_type=None):
-  """Uploads the given file to Gemini.
+class GeminiUploader(threading.Thread):
+    def __init__(self, path, mime_type=None):
+        super().__init__()
+        self.path = path
+        self.mime_type = mime_type
+        self.result = None
+        self.exception = None
+        self.stopRequest = False
 
-  See https://ai.google.dev/gemini-api/docs/prompting_with_media
-  """
-  file = genai.upload_file(path, mime_type=mime_type)
-  print(f"Uploaded file '{file.display_name}' as: {file.uri}")
-  return file
+    def run(self):
+        try:
+            # Esegui l'upload nel thread
+            self.result = genai.upload_file(self.path, mime_type=self.mime_type)
+            print(f"Uploaded file '{self.result.display_name}' as: {self.result.uri}")
+        except Exception as e:
+            self.exception = e
+            print(f"Error during upload: {e}")
 
-def wait_for_files_active(files):
-    for name in (file.name for file in files):
-        file = genai.get_file(name)
-        while file.state.name == "PROCESSING":
-          print(".", end="", flush=True)
-          time.sleep(10)
-          file = genai.get_file(name)
-        if file.state.name != "ACTIVE":
-          raise Exception(f"File {file.name} failed to process")
+    def get_result(self):
+        if self.exception:
+            raise self.exception
+        return self.result
 
+def upload_to_gemini_threaded(path, mime_type=None):
+    uploader = GeminiUploader(path, mime_type)
+    uploader.start()  # Avvia il thread
+    return uploader
 
-def analyze_audio(files):
+def analyze_audio(uploader):
+    start_time = time.time()
+    while True:
+        if uploader.stopRequest == True:
+            raise Exception("Idle request received")
+        if(uploader.result != None):
+            file = uploader.get_result()
+            break
+        time.sleep(0.1)
+    print(f"Uploading audio took {time.time() - start_time} seconds")
+    start_time = time.time()
     try:
-        # Carica il file audio su Gemini
-        #file = upload_to_gemini(audio_path, mime_type="audio/ogg")
-        #wait_for_files_active(files)
-        # Invia un messaggio al modello per ottenere una risposta dall'audio
-        if isinstance(files, list):
-            wait_for_files_active(files)
-            response = chat.send_message([*files, "rispondi a questa domanda"])  # stream=True "rispondi a questa domanda"
-        else:
-            response = chat.send_message([files, "rispondi a questa domanda"])
+
+        response = chat.send_message([file, "Sei il robot Nao. Rispondi all'audio come se stessi avendo una conversazione con una persona."])
         # for chunk in response:
         #     print(chunk.text)
         #     print("_" * 80)
         # Restituisce la risposta del modello
+        print(f"Analyzing audio took {time.time() - start_time} seconds")
         return response.text
 
     except Exception as e:
@@ -100,33 +116,54 @@ def analyze_audio(files):
 ############   CHIAMATE A NAO   ############
 
 
+
+
+def replace_emotion_tags(message):
+    replacements = {
+        r"\[joy\]": r"\\vct=105\\ \\rspd=110\\ \\vol=90\\",
+        r"\[happy\]": r"\\vct=105\\ \\rspd=105\\ \\vol=80\\",
+        r"\[sad\]": r"\\vct=97\\ \\rspd=90\\ \\vol=50\\",
+        r"\[angry\]": r"\\vct=99\\ \\rspd=120\\ \\vol=100\\",
+        r"\[surprised\]": r"\\vct=110\\ \\rspd=120\\ \\vol=90\\",
+        r"\[fear\]": r"\\vct=95\\ \\rspd=115\\ \\vol=80\\",
+        r"\[calm\]": r"\\vct=102\\ \\rspd=98\\ \\vol=70\\",
+        r"\[rst\]": r"\\rst\\",
+        r"\[pau[=\s,]*(\d+)\]": r"\\pau=\1\\"
+    }
+    for tag, tts_command in replacements.items():
+        message = re.sub(tag, tts_command, message, flags=re.IGNORECASE)
+    return message
+
 def clean_message(message):
-    message = re.sub(r"[^a-zA-ZàèéìòùÀÈÉÌÒÙ0-9\s,.!?']", ",", message)
+    print("\033[31mMessaggio: \033[0m", message)
+    message = re.sub(r"[^a-zA-ZàèéìòùÀÈÉÌÒÙ0-9\s,.!?\[\]']", ",", message)
     message = re.sub(r",*,+", ", ", message)
     message = re.sub(r"\n", " ", message)
     message = re.sub(r"\s+", " ", message)
     message = message.strip()
-    print("Messaggio pulito:", message)
+    #print("Messaggio pulito: ", message)
     return message
 
-# Funzione per inviare il messaggio generato al server Flask
 def say(message):
-    message = str(message).strip()
-    message = clean_message(message)
+    start_time = time.time()
 
-    # URL del server Flask che inoltra i messaggi al robot NAO
+    if "HARM_CATEGORY" in message:
+        message = "Scusa puoi ripetere la domanda?"
+    else:
+        message = str(message).strip()
+        message = clean_message(message)
+        message = replace_emotion_tags(message)
+
+
+
+
     url = 'http://localhost:6666/say'
-
-    # Dati da inviare in formato JSON
     data = {"message": message}
-
-    # Invia il messaggio al server Flask
     response = requests.post(url, json=data)
 
-    # Controlla la risposta del server
-    if response.status_code == 200:
-        print("Messaggio inviato con successo al robot NAO!")
-    else:
+    print(f"saying took {time.time() - start_time} seconds\n")
+
+    if response.status_code != 200:
         print("Errore nell'invio del messaggio:", response.json())
 
 
@@ -164,7 +201,6 @@ class NaoAudioSource(sr.AudioSource):
         sampling_frequency = 16000  # 16 kHz
         number_of_samples_per_chunk = 1365
         time_between_audio_chunks = number_of_samples_per_chunk / sampling_frequency  # in seconds
-        #corrected_time_between_audio_chunks = time_between_audio_chunks * 0.8
 
         while self.is_listening:
             response = requests.get(f"{self.server_url}/get_audio_chunk")
@@ -187,7 +223,6 @@ def convert_to_ogg(input_wav, output_ogg):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        print(f"Converted {input_wav} to {output_ogg}")
     except subprocess.CalledProcessError as e:
         print(f"Error during conversion: {e}")
 
@@ -200,40 +235,64 @@ def request_audio():
     audio_path = "./tmp/received_audio.ogg"
 
     while True:
-        # record audio only if it hasn't been recorded yet
         if audio_data is None:
+            print("Recording...")
+            start_time = time.time()
             with NaoAudioSource() as source:
-                print("Recording...")
-                #start_time = time.time()
-                audio_data = recognizer.listen(source, phrase_time_limit=10, timeout=None)
-                #print(f"Recording took {time.time() - start_time} seconds")
+                audio_data = recognizer.listen(source, phrase_time_limit=30, timeout=None)
 
-                audio_duration = len(audio_data.frame_data) / source.SAMPLE_RATE
-                if audio_duration < 1:
-                    print("Audio troppo breve, riprovo...")
-                    audio_data = None
-                    continue
+            if time.time() - start_time < 1.0:
+                #print("Audio troppo breve, riprovo...")
+                audio_data = None
+                continue
 
-                #start_time = time.time()
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
-                    temp_wav_file.write(audio_data.get_wav_data())
-                    temp_wav_file.close()
+            print(f"Recording took {time.time() - start_time} seconds")
 
-                    # noise reduction
-                    audio, sampling_rate = sf.read(temp_wav_file.name)
-                    reduced_audio = nr.reduce_noise(y=audio, sr=sampling_rate)
+            start_time = time.time()
 
-                    with open(audio_path_wav, "wb") as f:
-                        sf.write(f, reduced_audio, sampling_rate)
+            with open(audio_path_wav, "wb") as f:
+                f.write(audio_data.get_wav_data())
 
-                    convert_to_ogg(audio_path_wav, audio_path)
+                convert_to_ogg(audio_path_wav, audio_path)
 
-                    # print(f"Processing audio took {time.time() - start_time} seconds")
-                    start_time = time.time()
-                    file = upload_to_gemini(audio_path, mime_type="audio/ogg")
-                    print(f"Uploading audio took {time.time() - start_time} seconds")
+                print(f"Processing audio took {time.time() - start_time} seconds")
 
-                    return file
+                uploader = upload_to_gemini_threaded(audio_path, mime_type="audio/ogg")
+
+                return uploader
+                    
+                # with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
+                #     temp_wav_file.write(audio_data.get_wav_data())
+                #     temp_wav_file.close()
+                # 
+                #     # noise reduction
+                #     audio, sampling_rate = sf.read(temp_wav_file.name)
+                #     reduced_audio = nr.reduce_noise(y=audio, sr=sampling_rate)
+                # 
+                #     with open(audio_path_wav, "wb") as f:
+                #         sf.write(f, reduced_audio, sampling_rate)
+                # 
+                #     convert_to_ogg(audio_path_wav, audio_path)
+                # 
+                #     print(f"Processing audio took {time.time() - start_time} seconds")
+                #     start_time = time.time()
+                #     file = upload_to_gemini(audio_path, mime_type="audio/ogg")
+                #     print(f"Uploading audio took {time.time() - start_time} seconds")
+                # 
+                #     return file
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -270,13 +329,6 @@ def request_audio():
 #         # Gestione degli errori
 #         print(f"Errore durante l'analisi dell'immagine: {e}")
 #         return "Impossibile ottenere una descrizione dell'immagine."
-
-
-
-
-
-
-
 
 # def request_photo():
 #     try:
@@ -316,27 +368,3 @@ def request_audio():
 #
 #     except Exception as e:
 #         print(f"Errore durante l'analisi dell'immagine: {e}")
-
-# def request_audio():
-# 
-#     # Fai la richiesta GET per ottenere l'audio
-#     response = requests.get("http://127.0.0.1:6666/record_audio")
-# 
-#     if response.status_code == 200:
-#         # Estrai la stringa base64 dalla risposta JSON
-#         data = response.json()
-#         audio_base64 = data.get("audio")
-# 
-#         if audio_base64:
-#             # Decodifica la stringa base64 in dati binari
-#             audio_data = base64.b64decode(audio_base64)
-# 
-#             # Scrivi i dati audio in un file .ogg
-#             with open("./tmp/received_audio.ogg", "wb") as audio_file:
-#                 audio_file.write(audio_data)
-# 
-#             return "File audio ricevuto e salvato come 'received_audio.ogg'."
-#         else:
-#             return "Errore: Non è stato trovato l'audio nella risposta."
-#     else:
-#         return f"Errore nella richiesta: {response.status_code}"
