@@ -1,17 +1,9 @@
-import os
-import base64
 import time
-import re
-import cv2
-import numpy as np
-import requests
 import threading
+
+import requests
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
-import paramiko
-from datetime import datetime
-
-from tornado.autoreload import start
 
 # Configurazione del server Flask
 app = Flask(__name__)
@@ -26,38 +18,36 @@ NAO_PASSWORD = "2468"
 
 leds = ALProxy("ALLeds", NAO_IP, NAO_PORT)
 tts = ALProxy("ALTextToSpeech", NAO_IP, NAO_PORT)
+motionProxy = ALProxy("ALMotion", NAO_IP, NAO_PORT)
+postureProxy = ALProxy("ALRobotPosture", NAO_IP, NAO_PORT)
+trackerProxy = ALProxy("ALTracker", NAO_IP, NAO_PORT)
+memoryProxy = ALProxy("ALMemory", NAO_IP, NAO_PORT)
+animate = ALProxy("ALAnimatedSpeech", NAO_IP, NAO_PORT)
+
 rotate_event = threading.Event()
 tracking_event = threading.Event()
+track_thread = threading.Thread()
 
-
-def clean_message(message):
-    # Rimuovi caratteri speciali non supportati
-    return re.sub(r'[^a-zA-Z0-9\s,.!?]', '', message)
 
 @app.route('/say', methods=['POST'])
 def say():
     rotate_event.clear()
     leds.fadeRGB("FaceLeds", 0xffffff, 0.2)
 
-    # Ottiene il messaggio dal corpo della richiesta
     data = request.json
     message = data.get('message')
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
 
-    # Connessione al modulo ALTextToSpeech
-    #animate = ALProxy("ALAnimatedSpeech", NAO_IP, NAO_PORT)
-    #configuration = {"bodyLanguageMode": "random"}
+    configuration = {"bodyLanguageMode": "random"}
 
     try:
         tts.stopAll()
-        #clean_msg = clean_message(message)
-        clean_msg_utf8 = message.encode('utf-8')
-        print ("Sending message to NAO: ", clean_msg_utf8)
-        # Invia il messaggio al robot NAO per la sintesi vocale
-        tts.say(clean_msg_utf8)   #"\\style=joyful\\ " +
-        #animate.say(clean_msg_utf8, configuration)
+        message_utf8 = message.encode('utf-8')
+        print ("Sending message to NAO: ", message_utf8)
+        #tts.say(message_utf8)   #"\\style=joyful\\ " +
+        animate.say(message_utf8, configuration)
         return jsonify({"status": "Message sent to NAO"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -118,8 +108,7 @@ class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio
         self.buffers = []
 
     def start_listening(self):
-        self.audio_device.setClientPreferences(self.getName(), 16000, 3,
-                                               0)  # sample rate of 16000 Hz, channelparam 3 (front channel), and a deinterleaving flag of 0 (only relevant for channelparam 0 (all channels))
+        self.audio_device.setClientPreferences(self.getName(), 16000, 3, 0)  # sample rate of 16000 Hz, channelparam 3 (front channel), and a deinterleaving flag of 0 (only relevant for channelparam 0 (all channels))
         self.audio_device.subscribe(self.getName())
         self.is_listening = True
 
@@ -143,18 +132,11 @@ class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio
             print("no audio data available")
             return None
 
-try:
-    pythonBroker = ALBroker("pythonBroker", "0.0.0.0", 0, NAO_IP, NAO_PORT)  # broker connection: essential for communicating between the module and the NAOqi runtime
-    global AudioCapture
-    AudioCapture = AudioCaptureModule("AudioCapture")  # create an instance of the AudioCaptureModule class
-    print("AudioCapture module initialized")
-except RuntimeError:
-    print("Error initializing broker!")
-    exit(1)
-
 @app.route("/start_listening", methods=["POST"])
 def start_listening():
     # print("Received a request to start listening, current length of server buffer:", len(AudioCapture.buffers))
+    leds.off("FaceLeds")
+    leds.fadeRGB("FaceLeds", 0x42ff42, 0.5)
     AudioCapture.start_listening()
     return jsonify(success=True)
 
@@ -162,12 +144,17 @@ def start_listening():
 @app.route("/stop_listening", methods=["POST"])
 def stop_listening():
     # print("Received a request to stop listening, current length of server buffer:", len(AudioCapture.buffers))
+    leds.off("FaceLeds")
+    rotate_event.set()
+    rotate_thread = threading.Thread(target=rotate_eyes)
+    rotate_thread.start()
+
     AudioCapture.stop_listening()
-    tts.stopAll()
-    # leds.off("FaceLeds")
-    # rotate_event.set()
-    # rotate_thread = threading.Thread(target=rotate_eyes)
-    # rotate_thread.start()
+
+    motionProxy.setAngles("HeadPitch", 0, 0.1)
+    motionProxy.setAngles("HeadPitch", 0.2, 0.1)
+    motionProxy.setAngles("HeadPitch", 0, 0.1)
+
     return jsonify(success=True)
 
 
@@ -189,8 +176,7 @@ def get_audio_chunk():
 
 @app.route("/get_server_buffer_length", methods=["GET"])
 def get_server_buffer_length():
-    # print("Received a request to print the length of the server buffer, current length of server buffer:",
-    #       len(AudioCapture.buffers))
+    # print("Received a request to print the length of the server buffer, current length of server buffer:", len(AudioCapture.buffers))
     return jsonify(length=len(AudioCapture.buffers))
 
 def rotate_eyes():
@@ -240,43 +226,57 @@ def rotate_eyes():
                 break
 
 
-# def trackFace():
-# 
-#     # Create a proxy to ALFaceDetection
-#     motionProxy = ALProxy("ALMotion", NAO_IP, NAO_PORT)
-#     postureProxy = ALProxy("ALRobotPosture", NAO_IP, NAO_PORT)
-#     trackerProxy = ALProxy("ALTracker", NAO_IP, NAO_PORT)
-# 
-#     #motionProxy.wakeUp()
-#     motionProxy.setStiffnesses("Body", 1.0)
-# 
-#     print ("Starting tracker")
-# 
-#     # Add target to track.
-#     mode = "Head"
-#     targetName = "Face"
-#     faceWidth = 0.6
-#     trackerProxy.registerTarget(targetName, faceWidth)
-# 
-#     trackerProxy.track(targetName)
-# 
-#     try:
-#         while tracking_event.is_set():
-#             time.sleep(1)
-#     except KeyboardInterrupt:
-#         print ("Interrupted by user, stopping tracker")
-#     finally:
-#         leds.fadeRGB("FaceLeds", 0xffffff, 0.5)
-#         trackerProxy.stopTracker()
-#         trackerProxy.unregisterAllTargets()
-#         motionProxy.rest()
+def trackFace():
 
+    print ("Starting tracker")
+
+    targetName = "Face"
+    faceWidth = 0.6
+    trackerProxy.registerTarget(targetName, faceWidth)
+
+    trackerProxy.track(targetName)
+    try:
+        while tracking_event.is_set():
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print ("Interrupted by user, stopping tracker")
+    finally:
+        trackerProxy.stopTracker()
+        trackerProxy.unregisterAllTargets()
+
+def on_touch_head():
+    while tracking_event.is_set():
+        # Controlla lo stato dei sensori
+        front_touched = memoryProxy.getData("FrontTactilTouched")
+        middle_touched = memoryProxy.getData("MiddleTactilTouched")
+        rear_touched = memoryProxy.getData("RearTactilTouched")
+
+        if front_touched or middle_touched or rear_touched:
+            print("Testa toccata! Interrompo tutte le azioni...")
+            requests.post("http://127.0.0.1:6667/idle")
+            if(rotate_event.is_set()):
+                rotate_event.clear()
+            leds.off("FaceLeds")
+            motionProxy.stopMove()  # Ferma il movimento
+            tts.stopAll()  # Ferma la voce
+            # postureProxy.goToPosture("Stand", 0.5)  # Torna in posizione idle
+            print("NAO in stato idle.")
+
+        time.sleep(0.1)
 
 
 if __name__ == '__main__':
-    #tracking_event.set()
-    #track_thread = threading.Thread(target=trackFace)
-    #track_thread.start()
+
+
+    #motionProxy.setStiffnesses("Body", 1)
+    postureProxy.goToPosture("Stand", 0.5)  # Assume la posizione in piedi
+
+    tracking_event.set()
+    track_thread = threading.Thread(target=trackFace)
+    track_thread.start()
+
+    touch_head_thread = threading.Thread(target=on_touch_head)
+    touch_head_thread.start()
 
     try:
         # Avvia il server Flask in un thread separato
@@ -284,146 +284,24 @@ if __name__ == '__main__':
         server_thread.daemon = True
         server_thread.start()
 
+        pythonBroker = ALBroker("pythonBroker", "0.0.0.0", 0, NAO_IP, NAO_PORT)  # broker connection: essential for communicating between the module and the NAOqi runtime
+        global AudioCapture
+        AudioCapture = AudioCaptureModule("AudioCapture")  # create an instance of the AudioCaptureModule class
+
         print("Premi INVIO per terminare il programma.")
         raw_input()  # Attendi che l'utente prema INVIO
 
     finally:
         # Interrompi eventi e thread
         print("Chiusura in corso...")
-        #tracking_event.clear()
+        tracking_event.clear()
         rotate_event.clear()
+
+        motionProxy.stopMove()  # Ferma il movimento
+        tts.stopAll()  # Ferma la voce
+
+        leds.off("FaceLeds")
+        leds.fadeRGB("FaceLeds", 0xffffff, 0.5)
+        motionProxy.rest()
+
         print("Programma terminato.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def download_file(file_path_on_nao, local_filename):
-#     try:
-#         # Crea una connessione SSH con il robot
-#         ssh = paramiko.SSHClient()
-#         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#         ssh.connect(NAO_IP, username=NAO_USERNAME, password=NAO_PASSWORD)
-#
-#         # Usa SFTP per scaricare il file
-#         sftp = ssh.open_sftp()
-#         sftp.get(file_path_on_nao, "./tmp/" +local_filename)  # Scarica il file con il nome locale
-#         sftp.close()
-#         ssh.close()
-#
-#         print("File " + local_filename +" scaricato con successo!")
-#
-#     except Exception as e:
-#         print("Errore durante il download del file: ", e)
-#
-#
-# def detect_silence(audio_proxy):
-#     audio_proxy.enableEnergyComputation()
-#
-#     # Soglia di energia per considerare il silenzio
-#     silence_threshold = 300  # 300 valore buono
-#
-#     # Durata minima del silenzio in secondi
-#     silence_duration = 1  # Durata del silenzio per considerarlo rilevante
-#
-#     start_time = time.time()  # Tempo di inizio
-#     while True:
-#         # Ottieni l'energia dei microfoni
-#         front_energy = audio_proxy.getFrontMicEnergy()
-#         left_energy = audio_proxy.getLeftMicEnergy()
-#         right_energy = audio_proxy.getRightMicEnergy()
-#         rear_energy = audio_proxy.getRearMicEnergy()
-#
-#         # Calcola l'energia media dei microfoni
-#         average_energy = (front_energy + left_energy + right_energy + rear_energy) / 4.0
-#
-#         if average_energy < silence_threshold:
-#             if time.time() - start_time > silence_duration:
-#                 print("Silenzio rilevato!")
-#                 break  # Rilevato il silenzio, esci dal ciclo
-#         else:
-#             start_time = time.time()  # Reset del timer se viene rilevato un suono
-#
-#         time.sleep(0.1)  # Pausa per evitare sovraccarico CPU
-#
-# @app.route('/record_audio', methods=['GET'])
-# def record_audio():
-#     try:
-#         leds.fadeRGB("FaceLeds", 0x42ff42, 0.5)
-#
-#         audio_proxy = ALProxy("ALAudioDevice", NAO_IP, NAO_PORT)
-#
-#         filename_audio = "audio_LLM" + ".ogg" #datetime.now().strftime("%Y%m%d_%H%M%S")
-#         file_path_on_nao = "/home/nao/recordings/" + filename_audio
-#
-#         audio_proxy.stopMicrophonesRecording()
-#         silence_duration = 2
-#         start_time , stop_time = 0, 0
-#
-#         while (stop_time - start_time) < silence_duration:
-#             start_time = time.time()
-#             audio_proxy.startMicrophonesRecording(file_path_on_nao)
-#             detect_silence(audio_proxy)
-#             audio_proxy.stopMicrophonesRecording()
-#             stop_time = time.time()
-#
-#         print("Registrazione completata.")
-#         leds.off("FaceLeds")
-#         rotate_event.set()
-#         rotate_thread = threading.Thread(target=rotate_eyes)
-#         rotate_thread.start()
-#
-#         audio_proxy.stopMicrophonesRecording()
-#
-#         # Crea una connessione SSH e SFTP per leggere il file senza scaricarlo fisicamente
-#         ssh = paramiko.SSHClient()
-#         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#         ssh.connect(NAO_IP, username=NAO_USERNAME, password=NAO_PASSWORD)
-#
-#         # Usa SFTP per ottenere il file come oggetto binario in memoria
-#         sftp = ssh.open_sftp()
-#         with sftp.open(file_path_on_nao, 'rb') as audio_file:
-#             audio_data = audio_file.read()
-#
-#         # Codifica i dati audio in base64
-#         audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-#
-#         # Chiudi la connessione SFTP
-#         sftp.close()
-#         ssh.close()
-#
-#         # Restituisci il file audio come base64 in formato JSON
-#         return jsonify({"audio": audio_base64})
-#
-#
-#     except Exception as e:
-#
-#         print("Errore durante la registrazione: ", e)
-#         return jsonify({"error": str(e)}), 500
