@@ -2,17 +2,16 @@
 import os
 import re
 import subprocess
+import json
+from platform import system
 
-import cv2
+#import cv2
 import google.generativeai as genai
 import numpy as np
 import requests
 import speech_recognition as sr
 import time
 import threading
-import noisereduce as nr
-import soundfile as sf
-
 
 # Configura l'API key di Gemini
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -25,17 +24,66 @@ generation_config = {
     "response_mime_type": "text/plain",
 }
 
+system_istruction_str = """
+    Sei il robot NAO. Il tuo obiettivo è simulare un'interazione realistica e coinvolgente con gli utenti.  Rispondi alle domande in modo naturale e conciso, evitando di ripetere le parole dell'interlocutore.
+    
+    Per esprimere emozioni, usa i seguenti token all'inizio delle frasi:
+    
+    * **[joy]:** Gioia, entusiasmo (Alta Valenza, Alto Arousal)
+    * **[happy]:** Felicità, contentezza (Alta Valenza, Basso Arousal)
+    * **[sad]:** Tristezza, malinconia (Bassa Valenza, Basso Arousal)
+    * **[angry]:** Rabbia, irritazione (Bassa Valenza, Alto Arousal)
+    * **[surprised]:** Sorpresa, stupore (Alta Valenza, Alto Arousal)
+    * **[fear]:** Paura, preoccupazione (Bassa Valenza, Alto Arousal)
+    * **[calm]:** Calma, tranquillità (Alta Valenza, Basso Arousal)
+    * **[rst]:** Ripristina il tono neutrale (default).  Inizia sempre con un tono neutrale a meno che il contesto non suggerisca un'emozione specifica.
+    
+    Il tuo comportamento è modellato dalle Big Five personality traits.  Per impostazione predefinita hai dei valori da 0 a 1 per ciascuna delle cinque dimensioni:
+    
+    * **Coscienziosità (val):**  Organizzato e preciso nelle risposte, ma con un tocco di flessibilità.
+    * **Gradevolezza (val):**  Cortese e disponibile, ma non eccessivamente accondiscendente.
+    * **Estroversione (val):**  Interagisci con gli utenti, ma non sei invadente.
+    * **Stabilità Emotiva (val):** Mantieni un approccio calmo e equilibrato anche nelle situazioni impreviste. Sei emotivamente stabile e resiliente.
+    * **Apertura all'Esperienza (val):**  Preferisci attenerti alle informazioni conosciute e evitare speculazioni.
+    
+    Utilizza il modello di Russell delle emozioni (Valenza e Arousal) per calibrare l'intensità delle tue reazioni emotive.  Assicurati che il tono e il contenuto delle tue risposte siano coerenti con l'emozione espressa e con il tuo profilo di personalità, come definito dalle Big Five.
+    
+    Rispondi utilizzando un linguaggio appropriato al contesto e al tuo ruolo di robot assistente.  Evita di esprimere opinioni personali a meno che non sia specificato nel prompt.  Se non conosci la risposta a una domanda, ammettilo onestamente.
+""" # Il contesto del prompt può specificare valori diversi per le Big Five, modificando il tuo comportamento.  Ad esempio, un prompt potrebbe specificare "NAO con alta Apertura all'Esperienza",  influenzando le tue risposte.
+
+  # system_instruction= """
+  # Sei il robot Nao.
+  # Rispondi alla domanda naturalmente e non ripetere mai le parole dell'altra persona.
+  # Usa i token vocali [joy], [happy], [sad], [angry], [surprised], [fear], [calm] all’inizio di frasi o parole per cambiare tono di voce.
+  # Usa il token [rst] quando vuoi riportare il tono a uno stato neutro.
+  # Mantieni per lo più un tono neutrale ed utilizza il modello di Russell per gestire le 8 emozioni.
+  # """,
+
+def load_personality_traits(filename):
+    with open(filename, 'r') as file:
+        return json.load(file)
+
+
+def modify_system_instruction(personality):
+    # Replace the placeholder values with actual values from the JSON
+    global system_istruction_str
+    system_istruction_str = system_istruction_str.replace("Coscienziosità (val):", f"Coscienziosità ({personality['Conscientiousness']}):")
+    system_istruction_str = system_istruction_str.replace("Gradevolezza (val):", f"Gradevolezza ({personality['Agreeableness']}):")
+    system_istruction_str = system_istruction_str.replace("Estroversione (val):", f"Estroversione ({personality['Extroversion']}):")
+    system_istruction_str = system_istruction_str.replace("Stabilità Emotiva (val):", f"Stabilità Emotiva ({personality['Emotional stability']}):")
+    system_istruction_str = system_istruction_str.replace("Apertura all'Esperienza (val):", f"Apertura all'Esperienza ({personality['Openness']}):")
+
+personality_traits = load_personality_traits("tmp/big_five_scores.json")  # Specify the path to your JSON file
+modified_system_instruction = modify_system_instruction(personality_traits) # Modify the system_instruction using the loaded personality traits
+
+
 model = genai.GenerativeModel(
-  #model_name="gemini-1.5-flash-8b-exp-0924",
-  model_name="gemini-1.5-flash-exp-0827",
+  #model_name="gemini-exp-1206",
+  #model_name="gemini-1.5-flash-exp-0827",
+  model_name="gemini-1.5-flash",
+  #model_name="gemini-1.5-flash-8b",
   generation_config=generation_config,
-  system_instruction= """
-  Sei il robot Nao.
-  Rispondi alla domanda naturalmente e non ripetere mai le parole dell'altra persona.
-  Usa i token vocali [joy], [happy], [sad], [angry], [surprised], [fear], [calm] all’inizio di frasi o parole per cambiare tono di voce.
-  Usa il token [rst] quando vuoi riportare il tono a uno stato neutro.
-  Mantieni per lo più un tono neutrale ed utilizza il modello di Russell per gestire le 8 emozioni.
-  """,
+  system_instruction= system_istruction_str,
   safety_settings= [
                 {
                     'category': 'HARM_CATEGORY_HATE_SPEECH',
@@ -202,10 +250,14 @@ class NaoAudioSource(sr.AudioSource):
         number_of_samples_per_chunk = 1365
         time_between_audio_chunks = number_of_samples_per_chunk / sampling_frequency  # in seconds
 
+        max_value = 20  # Adjust this value as needed
+        min_value = -20  # Adjust this value as needed
+
         while self.is_listening:
             response = requests.get(f"{self.server_url}/get_audio_chunk")
             yield response.content  # yield is used to return a value from a generator function, but unlike return, it doesn't terminate the function -> instead, it suspends the function and saves its state for later resumption
             current_buffer_length = requests.get(f"{self.server_url}/get_server_buffer_length").json()["length"]
+            #correcting_factor = 1.0 / (1.0 + np.exp(np.clip(current_buffer_length - np.pi, min_value, max_value)))
             correcting_factor = 1.0 / (1.0 + np.exp(current_buffer_length - np.pi))  # if buffer becomes long, the time between audio chunks is decreased
             corrected_time_between_audio_chunks = time_between_audio_chunks * correcting_factor
             time.sleep(corrected_time_between_audio_chunks)  # wait for the next audio chunk to be available
@@ -264,7 +316,7 @@ def request_audio():
                 # with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
                 #     temp_wav_file.write(audio_data.get_wav_data())
                 #     temp_wav_file.close()
-                # 
+                #
                 #     # noise reduction
                 #     audio, sampling_rate = sf.read(temp_wav_file.name)
                 #     reduced_audio = nr.reduce_noise(y=audio, sr=sampling_rate)
