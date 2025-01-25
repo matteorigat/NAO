@@ -1,0 +1,8 @@
+parts {
+  text: "ciao"
+}
+role: "user"
+parts {
+  text: "Ciao! Come posso aiutarti oggi?\n"
+}
+role: "model"
