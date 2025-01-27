@@ -1,7 +1,7 @@
 {
-    "Agreeableness": 0.875,
+    "Agreeableness": 0.625,
     "Conscientiousness": 0.75,
-    "Emotional stability": 0.5,
-    "Extroversion": 0.5,
-    "Openness": 0.875
+    "Emotional stability": 0.75,
+    "Extroversion": 0.375,
+    "Openness": 0.5
 }

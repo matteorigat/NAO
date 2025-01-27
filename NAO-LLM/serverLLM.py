@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 
-import cv2
+#import cv2
 import google.generativeai as genai
 import numpy as np
 import requests
