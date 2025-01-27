@@ -2,8 +2,11 @@ import socket
 import speech_recognition as sr
 import pyttsx3
 import time
+import dlib
+import cv2
 import serverLLM
 from playsound import playsound
+import threading
 
 
 # Funzione per inviare messaggi al server
@@ -15,7 +18,7 @@ def send_message(message):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
             s.sendall(message.encode('utf-8'))
-            print(f"Messaggio inviato: {message}")
+            #print(f"Messaggio inviato: {message}")
     except Exception as e:
         print(f"Errore: {e}")
 
@@ -46,6 +49,39 @@ def listen_to_microphone():
         return None
 
 
+def face_tracking():
+    detector = dlib.get_frontal_face_detector()  # Rilevatore di volti
+    cap = cv2.VideoCapture(0)
+
+    while True:
+        ret, frame = cap.read()  # Legge un frame dalla fotocamera
+        if not ret:
+            print("Errore nell'accesso alla fotocamera.")
+            break
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = detector(gray)  # Rileva i volti
+
+        for face in faces:
+            # Calcola il centro del volto
+            center_x = (face.left() + face.right()) // 2
+            center_y = (face.top() + face.bottom()) // 2
+
+            # Invia le coordinate del centro del volto
+            face_data = f"{center_x},{center_y}"
+            send_message(f"face_position:{face_data}")
+
+
+        # Mostra il feed della videocamera
+        #cv2.imshow("Face Tracking", frame)
+
+
+        # Esce se premi 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 class TextToSpeech:
     def __init__(self, language="it-IT"):
@@ -81,4 +117,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    face_tracking_thread = threading.Thread(target=face_tracking)
+    main_thread = threading.Thread(target=main)
+
+    # Imposta entrambi i thread come daemon per chiuderli automaticamente quando il programma termina
+    face_tracking_thread.daemon = True
+    main_thread.daemon = True
+
+    # Avvia i thread
+    face_tracking_thread.start()
+    main_thread.start()
+
+    # Mantieni il programma principale attivo fino a quando l'utente non termina
+    face_tracking_thread.join()
+    main_thread.join()
