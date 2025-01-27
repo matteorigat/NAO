@@ -14,6 +14,7 @@ public class SocketServer : MonoBehaviour
 
     public GameObject robotPrefab; // Riferimento al prefab del robot
     private Animator robotAnimator; // Riferimento al componente Animator
+    private EyeLEDController eyeLEDController;
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>(); // Coda thread-safe
 
@@ -22,6 +23,7 @@ public class SocketServer : MonoBehaviour
         if (robotPrefab != null)
         {
             robotAnimator = robotPrefab.GetComponent<Animator>();
+            eyeLEDController = robotPrefab.GetComponent<EyeLEDController>(); 
             if (robotAnimator == null)
             {
                 Debug.LogError("Il prefab del robot non ha un componente Animator.");
@@ -92,30 +94,49 @@ public class SocketServer : MonoBehaviour
 
     void ProcessMessage(string message)
     {
-        if (robotAnimator == null) return;
+        if (robotAnimator == null || eyeLEDController == null) return;
         
         //robotAnimator.CrossFade("empty_animation", 0f); 
 
         switch (message)
         {
-            case "HeadYes":
-                Debug.Log("Comando HeadYes ricevuto!");
-                robotAnimator.CrossFade("Armature|HeadYes", 0.25f); // Smooth transition with 0.25 seconds blend time
+            case "listening":
+                Debug.Log("Comando Listening ricevuto!");
+                eyeLEDController.ListeningLEDs();
                 break;
 
-            case "Exlamation":
-                Debug.Log("Comando Exlamation ricevuto!");
-                robotAnimator.CrossFade("Armature|Exlamation", 0.25f);
+            case "loading":
+                Debug.Log("Comando Loading ricevuto!");
+                eyeLEDController.isRotating = true;
+                StartCoroutine(eyeLEDController.RotateEyes());
+                robotAnimator.CrossFade("Armature|HeadYes", 0.25f);
                 break;
 
-            case "GatherBothHandsInFront_001":
-                Debug.Log("Comando GatherBothHandsInFront_001 ricevuto!");
+            case "speaking":
+                Debug.Log("Comando Speaking ricevuto!");
+                eyeLEDController.isRotating = false;
+                eyeLEDController.SpeakingLEDs();
                 robotAnimator.CrossFade("Armature|GatherBothHandsInFront_001", 0.25f);
                 break;
-
+            
             default:
                 Debug.LogWarning("Comando non riconosciuto: " + message);
                 break;
+            
+            // case "HeadYes":
+            //     Debug.Log("Comando HeadYes ricevuto!");
+            //     break;
+            //
+            // case "Exlamation":
+            //     Debug.Log("Comando Exlamation ricevuto!");
+            //     robotAnimator.CrossFade("Armature|Exlamation", 0.25f);
+            //     break;
+            //
+            // case "GatherBothHandsInFront_001":
+            //     Debug.Log("Comando GatherBothHandsInFront_001 ricevuto!");
+            //     robotAnimator.CrossFade("Armature|GatherBothHandsInFront_001", 0.25f);
+            //
+            
         }
     }
 

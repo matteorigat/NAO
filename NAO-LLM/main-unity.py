@@ -2,6 +2,8 @@ import socket
 import speech_recognition as sr
 import pyttsx3
 import time
+import serverLLM
+from playsound import playsound
 
 
 # Funzione per inviare messaggi al server
@@ -44,14 +46,6 @@ def listen_to_microphone():
         return None
 
 
-# Funzione per elaborare il testo (simulando l'uso delle API di Gemini)
-def process_text_with_gemini(text):
-    # Simuliamo un'elaborazione del testo. Puoi sostituire questa parte con la tua chiamata API.
-    print("Elaborando il testo...")
-    processed_text = f"Elaborato: {text}"  # Questo è un esempio fittizio
-    send_message("speaking")
-    return processed_text
-
 
 class TextToSpeech:
     def __init__(self, language="it-IT"):
@@ -70,45 +64,20 @@ def main():
     tts = TextToSpeech()
 
     while True:
-        # Chiede un numero all'utente da terminale
-        print("\nInserisci un comando numerico:")
-        print("1: HeadYes")
-        print("2: Exlamation")
-        print("3: GatherBothHandsInFront_001")
-        print("4: Riconoscimento vocale")
-        print("0: Esci")
+        # Ascolta il microfono
+        send_message("listening")
+        text = listen_to_microphone()
 
-        user_input = input("Seleziona un'opzione: ")
+        if text:
+            # Elabora il testo
+            send_message("loading")
+            processed_text = serverLLM.analyze_text(text)
 
-        if user_input == "1":
-            send_message("HeadYes")
-            print("Comando: HeadYes")
+            response = serverLLM.say_to_file(processed_text)
 
-        elif user_input == "2":
-            send_message("Exlamation")
-            print("Comando: Exlamation")
-
-        elif user_input == "3":
-            send_message("GatherBothHandsInFront_001")
-            print("Comando: GatherBothHandsInFront_001")
-
-        elif user_input == "4":
-            # Ascolta il microfono e processa il riconoscimento vocale
-            text = listen_to_microphone()
-
-            if text:
-                # Elabora il testo ricevuto
-                processed_text = process_text_with_gemini(text)
-
-                # Pronuncia il risultato
-                tts.speak(processed_text)
-
-        elif user_input == "0":
-            print("Uscita dal programma.")
-            break
-
-        else:
-            print("Opzione non valida. Per favore, riprova.")
+            if response:
+                send_message("speaking")
+                playsound(response)
 
 
 if __name__ == "__main__":

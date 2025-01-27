@@ -1,6 +1,5 @@
 import time
 import threading
-
 import requests
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
@@ -51,6 +50,28 @@ def say():
         return jsonify({"status": "Message sent to NAO"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/say_to_file', methods=['POST'])
+def say_to_file():
+
+    data = request.json
+    message = data.get('message')
+
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    output_file = "/home/nao/audio_LLM.wav"  # File sul robot
+
+    try:
+        message_utf8 = message.encode('utf-8')
+        print ("Sending message to NAO: ", message_utf8)
+        tts.sayToFile(message_utf8, output_file)
+        return jsonify({"status": "Message sent to NAO"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 # @app.route('/capture_image', methods=['GET'])
 # def capture_image():

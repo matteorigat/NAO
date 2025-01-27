@@ -18,7 +18,7 @@ public class EyeLEDController : MonoBehaviour
 
     // Durata del singolo passo dell'animazione
     public float ledOnDuration = 0.1f;
-    private volatile bool isRotating = false;
+    public volatile bool isRotating = false;
     
     // Funzione per accendere tutti i LED di un occhio
     public void ListeningLEDs()
@@ -51,7 +51,6 @@ public class EyeLEDController : MonoBehaviour
         }
     }
 
-    // Funzione per spegnere tutti i LED di un occhio
     public void TurnOffAllLEDs()
     {
         foreach (var led in leftEyeLEDs)

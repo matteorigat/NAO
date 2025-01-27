@@ -10,6 +10,7 @@ import requests
 import speech_recognition as sr
 import time
 import threading
+import paramiko
 
 
 # Configura l'API key di Gemini
@@ -109,6 +110,22 @@ def analyze_audio(uploader):
         return "Impossibile ottenere una descrizione dell'audio. " + str(e)
 
 
+def analyze_text(text):
+    start_time = time.time()
+    try:
+
+        response = chat.send_message("Sei il robot Nao. Rispondi alla seguente fomanda come se stessi avendo una conversazione con una persona. " + text)
+        # for chunk in response:
+        #     print(chunk.text)
+        #     print("_" * 80)
+        # Restituisce la risposta del modello
+        print(f"Analyzing audio took {time.time() - start_time} seconds")
+        return response.text
+
+    except Exception as e:
+        return "Impossibile ottenere una descrizione dell'audio. " + str(e)
+
+
 
 
 ############   CHIAMATE A NAO   ############
@@ -163,6 +180,50 @@ def say(message):
 
     if response.status_code != 200:
         print("Errore nell'invio del messaggio:", response.json())
+
+
+def say_to_file(message):
+    start_time = time.time()
+
+    if "HARM_CATEGORY" in message:
+        message = "Scusa puoi ripetere la domanda?"
+    else:
+        message = str(message).strip()
+        message = clean_message(message)
+        message = replace_emotion_tags(message)
+
+
+    url = 'http://localhost:6666/say_to_file'
+    data = {"message": message}
+    response = requests.post(url, json=data)
+
+    if response.status_code == 200:
+        #filename_audio = "audio_LLM" + ".ogg"  # datetime.now().strftime("%Y%m%d_%H%M%S")
+        #file_path_on_nao = "/home/nao/recordings/" + filename_audio
+        # File sul robot e destinazione sul computer
+        remote_file = "/home/nao/" + "audio_LLM" + ".wav"
+        local_file = "tmp/audio_from_nao.wav"
+        nao_ip = "192.168.1.166"  # Indirizzo IP del robot
+        username = "nao"  # Nome utente del robot (default: "nao")
+        password = "2468"
+
+        # Connessione SCP
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(nao_ip, username=username, password=password)
+
+        sftp = ssh.open_sftp()
+        sftp.get(remote_file, local_file)
+        sftp.close()
+        ssh.close()
+
+        print(f"saying took {time.time() - start_time} seconds\n")
+        return local_file
+
+
+    if response.status_code != 200:
+        print("Errore nell'invio del messaggio:", response.json())
+        return None
 
 
 
@@ -278,6 +339,8 @@ def request_audio():
                 #     print(f"Uploading audio took {time.time() - start_time} seconds")
                 # 
                 #     return file
+
+
 
 
 
