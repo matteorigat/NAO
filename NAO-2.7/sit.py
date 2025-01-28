@@ -13,14 +13,14 @@ try:
     motion.wakeUp()
 
     # Far alzare il robot in posizione eretta
-    posture.goToPosture("Stand", 1.0)
+    posture.goToPosture("Stand", 0.5)
 
     # Attendi qualche secondo
     import time
     time.sleep(1)
 
     # Far sedere il robot
-    posture.goToPosture("Crouch", 1.0)
+    posture.goToPosture("Crouch", 0.5)
 
     # Disattivazione dei motori (per risparmiare energia)
     motion.rest()

@@ -288,16 +288,19 @@ def on_touch_head():
 
 if __name__ == '__main__':
 
+    user_input = raw_input("\nPress any button for stand up NAO\n")
 
-    #motionProxy.setStiffnesses("Body", 1)
-    postureProxy.goToPosture("Stand", 0.5)  # Assume la posizione in piedi
+    if user_input:
+        # motionProxy.setStiffnesses("Body", 1)
+        postureProxy.goToPosture("Stand", 0.5)  # Assume la posizione in piedi
 
-    tracking_event.set()
-    track_thread = threading.Thread(target=trackFace)
-    track_thread.start()
+        tracking_event.set()
+        track_thread = threading.Thread(target=trackFace)
+        track_thread.start()
 
-    touch_head_thread = threading.Thread(target=on_touch_head)
-    touch_head_thread.start()
+        touch_head_thread = threading.Thread(target=on_touch_head)
+        touch_head_thread.start()
+
 
     try:
         # Avvia il server Flask in un thread separato

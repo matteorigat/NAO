@@ -112,6 +112,22 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: c63000f9aeee9484289a292c0c42fa48, type: 2}
+    - target: {fileID: 7208261743932278219, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208261743932278219, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208261743932278219, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208261743932278219, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8051598327998962602, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
@@ -212,6 +228,7 @@ MonoBehaviour:
   SpeakingColorEmission: {r: 1, g: 1, b: 1, a: 1}
   SpeakingColor: {r: 1, g: 1, b: 1, a: 1}
   ledOnDuration: 0.1
+  isRotating: 0
 --- !u!137 &2687977352784832844 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 830674515679506844, guid: ee7c1cea236cc4995a16af384b950ce2, type: 3}

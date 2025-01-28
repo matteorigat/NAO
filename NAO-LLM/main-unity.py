@@ -1,8 +1,6 @@
 import socket
 import speech_recognition as sr
 import pyttsx3
-import time
-import dlib
 import cv2
 import serverLLM
 from playsound import playsound
@@ -50,36 +48,67 @@ def listen_to_microphone():
 
 
 def face_tracking():
-    detector = dlib.get_frontal_face_detector()  # Rilevatore di volti
-    cap = cv2.VideoCapture(0)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+    # Initialize the video capture object
+    cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
+
+    # Initialize the tracker variable
+    tracker = None
+    tracking_face = False
+
+    # Ottieni la larghezza e l'altezza della finestra del video
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    print(f"Risoluzione della finestra video: {frame_width}x{frame_height}")
 
     while True:
-        ret, frame = cap.read()  # Legge un frame dalla fotocamera
+        # Read a frame from the video capture
+        ret, frame = cap.read()
         if not ret:
-            print("Errore nell'accesso alla fotocamera.")
             break
 
+        frame = cv2.flip(frame, 1)
+        # Convert the frame to grayscale for face detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = detector(gray)  # Rileva i volti
 
-        for face in faces:
-            # Calcola il centro del volto
-            center_x = (face.left() + face.right()) // 2
-            center_y = (face.top() + face.bottom()) // 2
+        if not tracking_face:
+            # Detect faces in the grayscale frame
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-            # Invia le coordinate del centro del volto
-            face_data = f"{center_x},{center_y}"
-            send_message(f"face_position:{face_data}")
+            if len(faces) > 0:
+                # Select the first detected face (you can modify this to select a specific face)
+                x, y, w, h = faces[0]
+                tracker = cv2.TrackerCSRT_create()
+                tracker.init(frame, (x, y, w, h))
+                tracking_face = True
+                print("Face detected and tracking started.")
+        else:
+            # Update the tracker
+            success, bbox = tracker.update(frame)
+            if success:
+                # Draw a rectangle around the tracked face
+                x, y, w, h = [int(v) for v in bbox]
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
+                center_x = x + w // 2
+                center_y = y + h // 2
+                send_message(f"face_position:{center_x},{center_y}")
 
-        # Mostra il feed della videocamera
-        #cv2.imshow("Face Tracking", frame)
+            else:
+                tracking_face = False
+                print("Lost track of the face. Re-detecting.")
+                tracker = None
 
+        # # Display the resulting frame
+        # cv2.imshow('Face Tracking', frame)
+        # 
+        # # Break the loop if the 'q' key is pressed
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
-        # Esce se premi 'q'
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
+    # Release the video capture object and close all OpenCV windows
     cap.release()
     cv2.destroyAllWindows()
 
@@ -117,17 +146,11 @@ def main():
 
 
 if __name__ == "__main__":
-    face_tracking_thread = threading.Thread(target=face_tracking)
     main_thread = threading.Thread(target=main)
 
-    # Imposta entrambi i thread come daemon per chiuderli automaticamente quando il programma termina
-    face_tracking_thread.daemon = True
     main_thread.daemon = True
-
-    # Avvia i thread
-    face_tracking_thread.start()
     main_thread.start()
 
-    # Mantieni il programma principale attivo fino a quando l'utente non termina
-    face_tracking_thread.join()
+    face_tracking()
+
     main_thread.join()

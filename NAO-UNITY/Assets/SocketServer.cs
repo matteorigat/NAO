@@ -15,6 +15,8 @@ public class SocketServer : MonoBehaviour
     public GameObject robotPrefab; // Riferimento al prefab del robot
     private Animator robotAnimator; // Riferimento al componente Animator
     private EyeLEDController eyeLEDController;
+    private volatile float faceX = float.NaN;
+    private volatile float faceY = float.NaN; 
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>(); // Coda thread-safe
 
@@ -35,6 +37,7 @@ public class SocketServer : MonoBehaviour
             Debug.LogError("Robot prefab non assegnato.");
             return;
         }
+        
 
         StartServer();
     }
@@ -90,28 +93,32 @@ public class SocketServer : MonoBehaviour
         {
             ProcessMessage(message);
         }
+        
+        robotAnimator.enabled = false;
+        MoveHeadTowards(faceX, faceY);
+        robotAnimator.enabled = true;
     }
     
     void MoveHeadTowards(float faceX, float faceY)
     {
+        if (float.IsNaN(faceX) || float.IsNaN(faceY))
+            return;  
+        
         // Normalizza le coordinate in un range [-1, 1]
-        float normalizedX = Mathf.Clamp((faceX / 640f) * 2f - 1f, -1f, 1f); // Adatta la risoluzione della videocamera
-        float normalizedY = Mathf.Clamp((faceY / 480f) * 2f - 1f, -1f, 1f);
+        float normalizedX = -Mathf.Clamp((faceX / 1280f) * 2f - 1f , -1f, 1f); // Adatta la risoluzione della videocamera
+        float normalizedY = Mathf.Clamp((faceY / 720f) * 2f - 1f , -1f, 1f);
 
         // Trova il nodo della testa
         Transform head = robotPrefab.transform.Find("Armature/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:Neck/mixamorig:Head");
 
         if (head != null)
         {
-            // Calcola la nuova rotazione
-            float maxRotationAngle = 30f; // Angolo massimo di rotazione
+            // Calcola la nuova rotazione senza interpolazione
+            float maxRotationAngle = 20f; // Angolo massimo di rotazione
             Quaternion targetRotation = Quaternion.Euler(normalizedY * maxRotationAngle, normalizedX * maxRotationAngle, 0f);
 
-            // Applica la rotazione con interpolazione
-            float rotationSpeed = 5f; // Velocità di interpolazione
-            head.localRotation = Quaternion.Lerp(head.localRotation, targetRotation, Time.deltaTime * rotationSpeed);
-            
-            Debug.LogWarning("moving head");
+            // Applica direttamente la rotazione senza interpolazione
+            head.localRotation = targetRotation;
         }
         else
         {
@@ -130,8 +137,9 @@ public class SocketServer : MonoBehaviour
             string[] parts = message.Replace("face_position:", "").Split(',');
             if (parts.Length == 2 && float.TryParse(parts[0], out float faceX) && float.TryParse(parts[1], out float faceY))
             {
-                //Debug.Log($"Ricevuto face_position: X={faceX}, Y={faceY}");
-                MoveHeadTowards(faceX, faceY);
+                this.faceX = faceX;
+                this.faceY = faceY;
+                
             }
         }
         else
@@ -154,7 +162,7 @@ public class SocketServer : MonoBehaviour
                     Debug.Log("Comando Speaking ricevuto!");
                     eyeLEDController.isRotating = false;
                     eyeLEDController.SpeakingLEDs();
-                    robotAnimator.CrossFade("Armature|GatherBothHandsInFront_001", 0.25f);
+                    robotAnimator.CrossFade("Armature_GatherBothHandsInFront_001", 0.25f);
                     break;
 
                 default:

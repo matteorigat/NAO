@@ -1,49 +1,55 @@
-import threading
-import queue
-import os
-import time
-import serverLLM
+import cv2
 
-# Coda condivisa per passare i messaggi tra thread
-audio_queue = []
+# Load the pre-trained Haar Cascade Classifier for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# Thread per registrare l'audio continuamente
-def audio_listener():
-    while True:
-        try:
-            audio_file = serverLLM.request_audio()  # Acquisisce l'audio e salva in un file
-            if audio_file:
-                audio_queue.append(audio_file) # Aggiunge l'audio alla coda
-        except Exception as e:
-            print(f"Errore nell'ascolto: {e}")
+# Initialize the video capture object
+cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
 
+# Initialize the tracker variable
+tracker = None
+tracking_face = False
 
-    # Thread per analizzare l'audio e inviare la risposta
-def response_handler():
-    while True:
-        try:
-            if audio_queue:
-                response = serverLLM.analyze_audio(audio_queue.copy())
-                audio_queue.clear()
-                serverLLM.say(response)
-        except Exception as e:
-            print(f"Errore nell'analisi audio: {e}")
+while True:
+    # Read a frame from the video capture
+    ret, frame = cap.read()
+    if not ret:
+        break
 
+    frame = cv2.flip(frame, 1)
+    # Convert the frame to grayscale for face detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-if __name__ == '__main__':
+    if not tracking_face:
+        # Detect faces in the grayscale frame
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-    serverLLM.say("Ciao")
+        if len(faces) > 0:
+            # Select the first detected face (you can modify this to select a specific face)
+            x, y, w, h = faces[0]
+            tracker = cv2.TrackerCSRT_create()
+            tracker.init(frame, (x, y, w, h))
+            tracking_face = True
+            print("Face detected and tracking started.")
+    else:
+        # Update the tracker
+        success, bbox = tracker.update(frame)
+        if success:
+            # Draw a rectangle around the tracked face
+            x, y, w, h = [int(v) for v in bbox]
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        else:
+            tracking_face = False
+            print("Lost track of the face. Re-detecting.")
+            tracker = None
 
-    # Avvio dei thread
-    listener_thread = threading.Thread(target=audio_listener, daemon=True)
-    response_thread = threading.Thread(target=response_handler, daemon=True)
+    # Display the resulting frame
+    cv2.imshow('Face Tracking', frame)
 
-    listener_thread.start()
-    response_thread.start()
+    # Break the loop if the 'q' key is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-    # Mantieni il programma attivo
-    try:
-        while True:
-            time.sleep(1)  # Mantiene il programma attivo
-    except KeyboardInterrupt:
-        print("Terminazione richiesta dall'utente.")
+# Release the video capture object and close all OpenCV windows
+cap.release()
+cv2.destroyAllWindows()
