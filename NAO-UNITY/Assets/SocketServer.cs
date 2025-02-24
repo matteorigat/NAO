@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using System.Collections.Concurrent;
-
+/*
 public class SocketServer : MonoBehaviour
 {
     private TcpListener server;
@@ -200,3 +200,5 @@ public class SocketServer : MonoBehaviour
         }
     }
 }
+
+*/

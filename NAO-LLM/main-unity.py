@@ -126,7 +126,7 @@ class TextToSpeech:
 
 
 def main():
-    tts = TextToSpeech()
+    #tts = TextToSpeech()
 
     while True:
         # Ascolta il microfono

@@ -1,10 +1,21 @@
 from naoqi import ALProxy
-import time
 
-# Connessione al modulo ALTextToSpeech
-tts = ALProxy("ALTextToSpeech", "127.0.0.1", 9559)
+# Configurazione
+NAO_IP = "192.168.1.166"  # Sostituisci con l'IP del tuo NAO
+NAO_PORT = 9559  # Porta predefinita
 
-# Ciclo infinito per far ripetere il saluto
-while True:
-    tts.say("Hello, world!")
-    time.sleep(2)  # Pausa di 2 secondi tra un saluto e l'altro
+try:
+    # Creazione dei proxy
+    motion = ALProxy("ALMotion", NAO_IP, NAO_PORT)
+    posture = ALProxy("ALRobotPosture", NAO_IP, NAO_PORT)
+
+    # Risveglio del robot
+    motion.wakeUp()
+
+    # Far alzare il robot in posizione eretta
+    posture.goToPosture("StandZero", 0.5)
+
+    print("Script completato con successo.")
+
+except Exception as e:
+    print("Errore: ", e)

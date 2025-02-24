@@ -26,7 +26,7 @@ generation_config = {
 
 model = genai.GenerativeModel(
   #model_name="gemini-1.5-flash-8b-exp-0924",
-  model_name="gemini-1.5-flash-exp-0827",
+  model_name="gemini-1.5-flash",
   generation_config=generation_config,
   system_instruction= """
   Sei il robot Nao.
