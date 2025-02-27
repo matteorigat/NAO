@@ -38,7 +38,7 @@ keys.append([0, 0])
 
 names.append("LHand")
 times.append([0.5, 1])
-keys.append([0, 0.5])
+keys.append([0, 1])
 
 
 
@@ -50,11 +50,11 @@ names.append("RShoulderRoll")
 times.append([0.5, 1])
 keys.append([0, 0])
 
-names.append("RElbowRoll")
+names.append("RElbowYaw")
 times.append([0.5, 1])
 keys.append([0, 0])
 
-names.append("RElbowYaw")
+names.append("RElbowRoll")
 times.append([0.5, 1])
 keys.append([0, 0])
 
@@ -64,7 +64,7 @@ keys.append([0, 0])
 
 names.append("RHand")
 times.append([0.5, 1])
-keys.append([0, 0])
+keys.append([0, 1])
 
 
 

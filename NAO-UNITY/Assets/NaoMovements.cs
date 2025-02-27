@@ -11,7 +11,13 @@ public class NaoMovements : MonoBehaviour
         public string jointName;
         public Transform jointTransform;
         public Vector3 rotationAxis;  // L'asse da ruotare
-        public float initialAngleOffset = 0f;
+    }
+    
+    [System.Serializable]
+    public class JointMovementHand
+    {
+        public string jointName;
+        public List<Transform> jointTransforms;
     }
     
     public class Quaternions
@@ -21,14 +27,17 @@ public class NaoMovements : MonoBehaviour
         public Quaternion? rollRotation;
     }
 
-    public List<JointMovement> joints; // Lista dei giunti configurabili
+    [SerializeField] public List<JointMovement> joints; // Lista dei giunti configurabili
+    [SerializeField] public List<JointMovementHand> jointsHand; 
     private Dictionary<string, JointMovement> _jointMap;
+    private Dictionary<string, JointMovementHand> _jointMapHand;
     private Dictionary<Transform, Quaternions> _jointsUnion;
     private Dictionary<Transform, Quaternion> _jointsOffset;
   
     void Start()
     {
         _jointMap = new Dictionary<string, JointMovement>();
+        _jointMapHand = new Dictionary<string, JointMovementHand>();
         _jointsUnion = new Dictionary<Transform, Quaternions>();
         _jointsOffset = new Dictionary<Transform, Quaternion>();
         
@@ -43,6 +52,11 @@ public class NaoMovements : MonoBehaviour
             {
                 _jointsOffset[joint.jointTransform] = rotation;
             }
+        }
+        
+        foreach (var jointHand in jointsHand)
+        {
+            _jointMapHand[jointHand.jointName] = jointHand;
         }
         
         StartCoroutine(PlayMotion());
@@ -61,11 +75,18 @@ public class NaoMovements : MonoBehaviour
             
             { "LShoulderPitch", new List<float> { 0f, 0f} },
             { "LShoulderRoll", new List<float> { 0f, 0f } },
-            
             { "LElbowYaw", new List<float> { 0f, 0f} },
             { "LElbowRoll", new List<float> { 0f, 0f } },
-            
             { "LWristYaw", new List<float> { 0f, 0f } },
+            { "LHand", new List<float> { 0f, 1f } },
+            
+            
+            { "RShoulderPitch", new List<float> { 0f, 0f} },
+            { "RShoulderRoll", new List<float> { 0f, 0f } },
+            { "RElbowYaw", new List<float> { 0f, 0f} },
+            { "RElbowRoll", new List<float> { 0f, 0f } },
+            { "RWristYaw", new List<float> { 0f, 0f } },
+            { "RHand", new List<float> { 0f, 1f } },
         };
 
         Dictionary<string, List<float>> motionTimes = new Dictionary<string, List<float>>
@@ -75,14 +96,21 @@ public class NaoMovements : MonoBehaviour
             
             { "LShoulderPitch", new List<float> { 0.5f, 1f } },
             { "LShoulderRoll", new List<float> { 0.5f, 1f} },
-            
             { "LElbowYaw", new List<float> { 0.5f, 1f} },
             { "LElbowRoll", new List<float> { 0.5f, 1f } },
-            
             { "LWristYaw", new List<float> { 0.5f, 1f } },
+            { "LHand", new List<float> { 0.5f, 1f } },
+            
+            
+            { "RShoulderPitch", new List<float> { 0.5f, 1f } },
+            { "RShoulderRoll", new List<float> { 0.5f, 1f} },
+            { "RElbowYaw", new List<float> { 0.5f, 1f} },
+            { "RElbowRoll", new List<float> { 0.5f, 1f } },
+            { "RWristYaw", new List<float> { 0.5f, 1f } },
+            { "RHand", new List<float> { 0.5f, 1f } },
         };
         */
-        
+            
         string filePath = "Assets/motion_data.txt";
 
         var (motionKeys, motionTimes) = MotionExtractor.ExtractMotionData(filePath);
@@ -111,7 +139,7 @@ public class NaoMovements : MonoBehaviour
                 {
                     JointMovement joint = _jointMap[jointName];
                     float angle = Interpolate(elapsedTime, motionTimes[jointName], motionKeys[jointName]);
-                    if (angle == 0f) continue;
+                    //if (angle == 0f) continue;
                     float angleInDegrees = Mathf.Rad2Deg * angle;
                     
                     if (!_jointsUnion.ContainsKey(joint.jointTransform))
@@ -125,12 +153,36 @@ public class NaoMovements : MonoBehaviour
                     else if (joint.rotationAxis == Vector3.up) // Yaw (y)
                         _jointsUnion[joint.jointTransform].yawRotation = Quaternion.Euler(0f, -angleInDegrees, 0f);
                     else if (joint.rotationAxis == Vector3.forward) // Roll (z)
-                        _jointsUnion[joint.jointTransform].rollRotation = Quaternion.Euler(0f, 0f, angleInDegrees);
+                            if ( jointName == "LElbowRoll" || jointName == "RElbowRoll")
+                                _jointsUnion[joint.jointTransform].rollRotation = Quaternion.Euler(0f, 0f, -angleInDegrees); 
+                            else _jointsUnion[joint.jointTransform].rollRotation = Quaternion.Euler(0f, 0f, angleInDegrees);
+                }
+                else if (_jointMapHand.ContainsKey(jointName))
+                {
+                    JointMovementHand hand = _jointMapHand[jointName];
+                    float angle = Interpolate(elapsedTime, motionTimes[jointName], motionKeys[jointName]);
+                    float angleInDegrees = Mathf.Rad2Deg * angle;
+                    int count = 0;
+                    foreach (var joint in hand.jointTransforms)
+                    {
+                        if (!_jointsUnion.ContainsKey(joint))
+                        {
+                            _jointsUnion[joint] = new Quaternions();
+                        }
+
+                        float adjustedAngle = (count < 6) ? -angleInDegrees*1.3f : angleInDegrees*0.5f;
+                        _jointsUnion[joint].pitchRotation = Quaternion.Euler(adjustedAngle, 0f, 0f);
+                        float rotationAngle = (count < 6) ? 0f : 20f;
+                        _jointsUnion[joint].rollRotation = Quaternion.Euler(0f, rotationAngle, 0.5f);
+    
+                        count++; // Incrementa il contatore
+                    }
                 }
             }
             
             foreach (var joint in _jointsUnion)
             {
+                Debug.Log(joint.Key);
                 Quaternions rotations = joint.Value;
                 
                 Quaternion pitchRotation = Quaternion.identity;
@@ -160,7 +212,10 @@ public class NaoMovements : MonoBehaviour
                 */
 
                 // Applica la rotazione finale
-                joint.Key.localRotation = pitchRotation * yawRotation * rollRotation * _jointsOffset[joint.Key];
+                if (_jointsOffset.ContainsKey(joint.Key))
+                    joint.Key.localRotation = pitchRotation * yawRotation * rollRotation * _jointsOffset[joint.Key];
+                else joint.Key.localRotation = pitchRotation * yawRotation * rollRotation;
+
             }
 
             elapsedTime += Time.deltaTime;
