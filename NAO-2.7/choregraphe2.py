@@ -18,11 +18,11 @@ keys.append([0, 0])
 
 names.append("LShoulderPitch")
 times.append([0.5, 1])
-keys.append([0, 0])
+keys.append([0, 1])
 
 names.append("LShoulderRoll")
 times.append([0.5, 1])
-keys.append([0, 0])
+keys.append([0, 1])
 
 names.append("LElbowYaw")
 times.append([0.5, 1])

@@ -10,7 +10,7 @@ import threading
 # Funzione per inviare messaggi al server
 def send_message(message):
     host = '127.0.0.1'  # Indirizzo IP del server (localhost per Unity)
-    port = 65432  # Porta del server (deve corrispondere a quella in Unity)
+    port = 50000  # Porta del server (deve corrispondere a quella in Unity)
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
