@@ -20,7 +20,7 @@ public class NaoMovements : MonoBehaviour
         public List<Transform> jointTransforms;
     }
     
-    public class Quaternions
+    private class Quaternions
     {
         public Quaternion? pitchRotation;
         public Quaternion? yawRotation;
@@ -59,11 +59,11 @@ public class NaoMovements : MonoBehaviour
             _jointMapHand[jointHand.jointName] = jointHand;
         }
         
-        //StartCoroutine(PlayMotion());
+        StartCoroutine(PlayMotion("Assets/Scripts/Gestures/GoToStand.txt"));
     }
     
         
-    IEnumerator PlayMotion(String filePath)
+    public IEnumerator PlayMotion(String filePath)
     {
         
         float elapsedTime = 0f;
@@ -236,17 +236,32 @@ public class NaoMovements : MonoBehaviour
     
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha4))
+        foreach (KeyCode key in new KeyCode[] { KeyCode.Q, KeyCode.A, KeyCode.Z, KeyCode.W, KeyCode.S, KeyCode.X, KeyCode.E, KeyCode.D, KeyCode.C, KeyCode.R, KeyCode.F, KeyCode.V })
         {
-            StartCoroutine(PlayMotion("Assets/Scripts/Gestures/ArmsUpAndDown.txt"));
+            if (Input.GetKeyDown(key))
+            {
+                StartCoroutine(PlayMotion(GetGesturePath(key)));
+            }
         }
-        if (Input.GetKeyDown(KeyCode.Alpha5))
+    }
+    
+    string GetGesturePath(KeyCode key)
+    {
+        switch (key)
         {
-            StartCoroutine(PlayMotion("Assets/Scripts/Gestures/BothHandsInFront.txt"));
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha6))
-        {
-            StartCoroutine(PlayMotion("Assets/Scripts/Gestures/Guitar.txt"));
+            case KeyCode.Q: return "Assets/Scripts/Gestures/Happyness1.txt";
+            case KeyCode.A: return "Assets/Scripts/Gestures/Happyness2.txt";
+            case KeyCode.Z: return "Assets/Scripts/Gestures/Happyness3.txt";
+            case KeyCode.W: return "Assets/Scripts/Gestures/Sadness1.txt";
+            case KeyCode.S: return "Assets/Scripts/Gestures/Sadness2.txt";
+            case KeyCode.X: return "Assets/Scripts/Gestures/Sadness3.txt";
+            case KeyCode.E: return "Assets/Scripts/Gestures/Anger1.txt";
+            case KeyCode.D: return "Assets/Scripts/Gestures/Anger2.txt";
+            case KeyCode.C: return "Assets/Scripts/Gestures/Anger3.txt";
+            case KeyCode.R: return "Assets/Scripts/Gestures/Fear1.txt";
+            case KeyCode.F: return "Assets/Scripts/Gestures/Fear2.txt";
+            case KeyCode.V: return "Assets/Scripts/Gestures/Fear3.txt";
+            default: return string.Empty;
         }
     }
 }
