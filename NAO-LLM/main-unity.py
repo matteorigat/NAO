@@ -51,7 +51,7 @@ def face_tracking():
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     # Initialize the video capture object
-    cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
+    cap = cv2.VideoCapture(1)  # Use 0 for the default webcam
 
     # Initialize the tracker variable
     tracker = None
@@ -146,11 +146,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main_thread = threading.Thread(target=main)
+    facetracking_thread = threading.Thread(target=face_tracking)
 
-    main_thread.daemon = True
-    main_thread.start()
+    facetracking_thread.daemon = True
+    facetracking_thread.start()
 
-    face_tracking()
+    main()
 
-    main_thread.join()
+    facetracking_thread.join()

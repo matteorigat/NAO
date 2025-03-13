@@ -18,6 +18,7 @@ public class SocketServer : MonoBehaviour
     private volatile float faceX = float.NaN;
     private volatile float faceY = float.NaN;
     private NaoMovements NaoMovements;
+    private String lastPose = "Stand";
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>(); // Coda thread-safe
 
@@ -169,45 +170,23 @@ public class SocketServer : MonoBehaviour
                     //robotAnimator.CrossFade("Armature_GatherBothHandsInFront_001", 0.25f);
                     break;
                 
-                case "happyness1":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Happyness1.txt"));
-                    break;
-                case "happyness2":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Happyness2.txt"));
-                    break;
-                case "happyness3":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Happyness3.txt"));
-                    break;
-                case "sadness1":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Sadness1.txt"));
-                    break;
-                case "sadness2":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Sadness2.txt"));
-                    break;
-                case "sadness3":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Sadness3.txt"));
-                    break;
-                case "anger1":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Anger1.txt"));
-                    break;
-                case "anger2":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Anger2.txt"));
-                    break;
-                case "anger3":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Anger3.txt"));
-                    break;
-                case "fear1":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Fear1.txt"));
-                    break;
-                case "fear2":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Fear2.txt"));
-                    break;
-                case "fear3":
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/Fear3.txt"));
+                case "Stand":
+                    if(lastPose == "Stand")
+                        break;
+                    
+                    Debug.Log("LastPose: " + lastPose);
+                    if(lastPose == "Fear3" || lastPose == "Sadness3")
+                        StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +"reverse.txt"));
+                    else
+                        StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +".txt", true));
+                    Debug.Log("Performed stand: "+ message);
+                    lastPose = "Stand";
                     break;
 
                 default:
-                    Debug.LogWarning("Comando non riconosciuto: " + message);
+                    Debug.Log("Perform: "+ message);
+                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ message +".txt"));
+                    lastPose = message;
                     break;
 
                 // case "HeadYes":

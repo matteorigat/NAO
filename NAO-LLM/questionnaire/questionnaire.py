@@ -49,7 +49,7 @@ def index():
 
         punteggi_big_five = calcola_punteggio_big_five([int(risposta) for risposta in risposte.values()])
 
-        with open("tmp/big_five_scores.json", "w") as f:
+        with open("../tmp/big_five_scores.json", "w") as f:
             json.dump(punteggi_big_five, f, indent=4)
         return render_template("index.html", completato=True)
 

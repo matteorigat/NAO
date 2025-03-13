@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Feedback Emoji</title>
+</head>
+<body>
+    <br>
+    <h2>Quale emozione riconosci?</h2>
+    <div class="emoji-container">
+        <div class="emoji-box"><span class="emoji">🙂</span><br><input type="radio" name="emotion" value="happy"></div>
+        <div class="emoji-box"><span class="emoji">🙁</span><br><input type="radio" name="emotion" value="sad"></div>
+        <div class="emoji-box"><span class="emoji">😠</span><br><input type="radio" name="emotion" value="angry"></div>
+        <div class="emoji-box"><span class="emoji">😨</span><br><input type="radio" name="emotion" value="fear"></div>
+    </div>
+
+    <br>
+    <h2>quanto è felice?</h2>
+    <div class="sam-container">
+        <img src="static/sam_scale_valence.png" alt="SAM Scale valence">
+    </div>
+    <br>
+    <div class="checkbox-container">
+        <label><input type="radio" name="sam-valence" value="1"></label>
+        <label><input type="radio" name="sam-valence" value="2"></label>
+        <label><input type="radio" name="sam-valence" value="3"></label>
+        <label><input type="radio" name="sam-valence" value="4"></label>
+        <label><input type="radio" name="sam-valence" value="5"></label>
+        <label><input type="radio" name="sam-valence" value="6"></label>
+        <label><input type="radio" name="sam-valence" value="7"></label>
+        <label><input type="radio" name="sam-valence" value="8"></label>
+        <label><input type="radio" name="sam-valence" value="9"></label>
+    </div>
+
+    <br>
+    <h2>quanto è eccitato?</h2>
+    <div class="sam-container">
+        <img src="static/sam_scale_arousal.png" alt="SAM Scale arousal">
+    </div>
+    <br>
+    <div class="checkbox-container">
+        <label><input type="radio" name="sam-arousal" value="1"></label>
+        <label><input type="radio" name="sam-arousal" value="2"></label>
+        <label><input type="radio" name="sam-arousal" value="3"></label>
+        <label><input type="radio" name="sam-arousal" value="4"></label>
+        <label><input type="radio" name="sam-arousal" value="5"></label>
+        <label><input type="radio" name="sam-arousal" value="6"></label>
+        <label><input type="radio" name="sam-arousal" value="7"></label>
+        <label><input type="radio" name="sam-arousal" value="8"></label>
+        <label><input type="radio" name="sam-arousal" value="9"></label>
+    </div>
+
+    <!-- Pulsante Freccia (avanti) a sinistra -->
+    <button class="corner-button left-button" onclick="repeatGesture()">🔁<br>ripeti azione</button>
+
+    <!-- Pulsante Ripeti azione a destra -->
+    <button class="corner-button right-button" onclick="sendFeedback()">⏩<br>prossima azione</button>
+
+   <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

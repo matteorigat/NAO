@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class NaoMovements : MonoBehaviour
 {
@@ -63,7 +64,7 @@ public class NaoMovements : MonoBehaviour
     }
     
         
-    public IEnumerator PlayMotion(String filePath)
+    public IEnumerator PlayMotion(String filePath, bool reverse = false)
     {
         
         float elapsedTime = 0f;
@@ -116,22 +117,66 @@ public class NaoMovements : MonoBehaviour
 
         var (motionKeys, motionTimes) = MotionExtractor.ExtractMotionData(filePath);
         
-        /*Debug.Log("Motion Keys:");
-        foreach (var entry in motionKeys)
+        for (int i = 0; i < motionKeys.Count; i++)
         {
-            Debug.Log($"Joint: {entry.Key} - Keys: {string.Join(", ", entry.Value)}");
-        }*/
+            var jointName = motionKeys.Keys.ElementAt(i);
 
-        //Debug.Log("\nMotion Times:");
+            List<float> jointKeys = motionKeys[jointName];
+            List<float> jointTimes = motionTimes[jointName];
+
+            Debug.Log($"Joint: {jointName} - Keys: {string.Join(", ", jointKeys)} - Times: {string.Join(", ", jointTimes)}");
+            if(i == 3) break;
+        }
+
         foreach (var entry in motionTimes)
         {
-            //Debug.Log($"Joint: {entry.Key} - Times: {string.Join(", ", entry.Value)}");
             foreach (float time in entry.Value)
             {
                 if (time > totalDuration)
                 {
                     totalDuration = time;
                 }
+            }
+        }
+
+        if (reverse)
+        {
+            Debug.Log("reverseeee");
+            // Inizializza i dizionari per i tempi e i keyframe invertiti
+            var reversedTimes = new Dictionary<string, List<float>>();
+            var reversedKeys = new Dictionary<string, List<float>>();
+
+            // Inverti i tempi e i keyframe
+            foreach (var entry in motionTimes)
+            {
+                string jointName = entry.Key;
+                List<float> jointTimes = entry.Value;
+
+                // Invertiamo i tempi
+                List<float> reversedJointTimes = jointTimes.Select(time => totalDuration - time).ToList();
+                reversedTimes[jointName] = reversedJointTimes;
+
+                // Invertiamo i keyframe (assumiamo che motionKeys abbia i keyframe per ciascun giunto)
+                if (motionKeys.ContainsKey(jointName))
+                {
+                    List<float> jointKeys = motionKeys[jointName];
+                    List<float> reversedJointKeys = jointKeys.AsEnumerable().Reverse().ToList();
+                    reversedKeys[jointName] = reversedJointKeys;
+                }
+            }
+            
+            motionKeys = reversedKeys;
+            motionTimes = reversedTimes;
+            
+            for (int i = 0; i < motionKeys.Count; i++)
+            {
+                var jointName = motionKeys.Keys.ElementAt(i);
+
+                List<float> jointKeys = motionKeys[jointName];
+                List<float> jointTimes = motionTimes[jointName];
+
+                Debug.Log($"Joint: {jointName} - Keys: {string.Join(", ", jointKeys)} - Times: {string.Join(", ", jointTimes)}");
+                if(i == 3) break;
             }
         }
 
@@ -249,9 +294,9 @@ public class NaoMovements : MonoBehaviour
     {
         switch (key)
         {
-            case KeyCode.Q: return "Assets/Scripts/Gestures/Happyness1.txt";
-            case KeyCode.A: return "Assets/Scripts/Gestures/Happyness2.txt";
-            case KeyCode.Z: return "Assets/Scripts/Gestures/Happyness3.txt";
+            case KeyCode.Q: return "Assets/Scripts/Gestures/Happiness1.txt";
+            case KeyCode.A: return "Assets/Scripts/Gestures/Happiness2.txt";
+            case KeyCode.Z: return "Assets/Scripts/Gestures/Happiness3.txt";
             case KeyCode.W: return "Assets/Scripts/Gestures/Sadness1.txt";
             case KeyCode.S: return "Assets/Scripts/Gestures/Sadness2.txt";
             case KeyCode.X: return "Assets/Scripts/Gestures/Sadness3.txt";

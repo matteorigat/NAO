@@ -1,0 +1,67 @@
+body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+}
+h1, h2 {
+    color: #333;
+}
+.emoji-container, .sam-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: -15px;
+}
+.emoji-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.emoji {
+    font-size: 3em;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.emoji:hover {
+    transform: scale(1.2);
+}
+.sam img {
+    width: 150px;
+    margin-bottom: 10px;
+}
+.checkbox-container {
+    display: flex;
+    justify-content: center;
+    gap: 43px;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.checkbox-container input, .emoji-box input {
+    transform: scale(1.5);
+    cursor: pointer;
+}
+
+/* Pulsanti in basso a sinistra e destra */
+.corner-button {
+    position: absolute;
+    bottom: 20px;
+    font-size: 20px;
+    padding: 10px 20px;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.corner-button:hover {
+    transform: scale(1.1);
+}
+
+.left-button {
+    left: 20px;
+}
+.right-button {
+    right: 20px;
+}

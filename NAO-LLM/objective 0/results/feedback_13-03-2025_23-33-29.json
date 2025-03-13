@@ -1,0 +1,12 @@
+{
+    "id": 11,
+    "c9d8f429-2fa5-4c3c-82a9-3d1ee9f7e50c": [
+        {
+            "interaction": "virtual",
+            "emotion": "Anger1",
+            "emotion-recognized": "fear",
+            "valence": "4",
+            "arousal": "6"
+        }
+    ]
+}

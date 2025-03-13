@@ -169,9 +169,6 @@ def say(message):
         message = clean_message(message)
         message = replace_emotion_tags(message)
 
-
-
-
     url = 'http://localhost:6666/say'
     data = {"message": message}
     response = requests.post(url, json=data)
@@ -224,6 +221,15 @@ def say_to_file(message):
     if response.status_code != 200:
         print("Errore nell'invio del messaggio:", response.json())
         return None
+
+def send_gesture(message):
+
+    url = 'http://localhost:6666/gesture'
+    data = {"message": message}
+    response = requests.post(url, json=data)
+
+    if response.status_code != 200:
+        print("Errore nell'invio del messaggio:", response.json())
 
 
 
