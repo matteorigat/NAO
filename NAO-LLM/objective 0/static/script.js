@@ -16,6 +16,8 @@ function sendFeedback() {
         return;
     }
 
+    resetPage()
+
     fetch('/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,7 +48,6 @@ function sendFeedback() {
 .then(data => {
     // Questo viene eseguito solo se la risposta è OK (codice di stato 200)
     console.log(data);  // Puoi anche gestire i dati del server qui
-    resetPage();  // La funzione per resettare la pagina, o altre azioni
 })
 .catch(error => {
     console.error('Errore:', error);

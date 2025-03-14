@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 public class SocketServer : MonoBehaviour
 {
@@ -19,6 +20,14 @@ public class SocketServer : MonoBehaviour
     private volatile float faceY = float.NaN;
     private NaoMovements NaoMovements;
     private String lastPose = "Stand";
+    
+    private List<string> gesturesList = new List<string>
+    {
+        "Happiness1", "Happiness2", "Happiness3",
+        "Sadness1", "Sadness2", "Sadness3",
+        "Anger1", "Anger2", "Anger3",
+        "Fear1", "Fear2", "Fear3",
+    };
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>(); // Coda thread-safe
 
@@ -182,27 +191,16 @@ public class SocketServer : MonoBehaviour
                     Debug.Log("Performed stand: "+ message);
                     lastPose = "Stand";
                     break;
-
-                default:
-                    Debug.Log("Perform: "+ message);
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ message +".txt"));
+                
+                case var mess when gesturesList.Contains(mess): // Controllo se message è in gesturesList
+                    Debug.Log("Perform gesture: " + message);
+                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + message + ".txt"));
                     lastPose = message;
                     break;
 
-                // case "HeadYes":
-                //     Debug.Log("Comando HeadYes ricevuto!");
-                //     break;
-                //
-                // case "Exlamation":
-                //     Debug.Log("Comando Exlamation ricevuto!");
-                //     robotAnimator.CrossFade("Armature|Exlamation", 0.25f);
-                //     break;
-                //
-                // case "GatherBothHandsInFront_001":
-                //     Debug.Log("Comando GatherBothHandsInFront_001 ricevuto!");
-                //     robotAnimator.CrossFade("Armature|GatherBothHandsInFront_001", 0.25f);
-                //
-
+                default:
+                    Debug.Log("Comando non riconosciuto: " + message);
+                    break;
             }
         }
     }

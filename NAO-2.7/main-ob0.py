@@ -1,5 +1,3 @@
-from os import wait3
-
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
 import threading
@@ -8,6 +6,7 @@ from Gestures import Happiness1, Happiness2, Happiness3
 from Gestures import Sadness1, Sadness2, Sadness3
 from Gestures import Anger1, Anger2, Anger3
 from Gestures import Fear1, Fear2, Fear3
+from Gestures import Sadness3reverse, Fear3reverse
 
 
 app = Flask(__name__)
@@ -22,7 +21,8 @@ GESTURE_MAP = {
     "Anger1": Anger1, "Anger2": Anger2, "Anger3": Anger3,
     "Fear1": Fear1, "Fear2": Fear2, "Fear3": Fear3,
     "Happiness1": Happiness1, "Happiness2": Happiness2, "Happiness3": Happiness3,
-    "Sadness1": Sadness1, "Sadness2": Sadness2, "Sadness3": Sadness3
+    "Sadness1": Sadness1, "Sadness2": Sadness2, "Sadness3": Sadness3,
+    "Sadness3reverse": Sadness3reverse, "Fear3reverse": Fear3reverse
 }
 
 
@@ -36,13 +36,12 @@ def gesture():
 
     global lastPose
     if(message == "Stand" and lastPose != "Stand"):
-        lastPose = "Stand"
         return goToStand()
 
     # Controlla se il messaggio corrisponde a un gesto valido
     gesture_class = GESTURE_MAP.get(message)
     if not gesture_class:
-        return jsonify({"error": "Invalid gesture name" + message}), 400
+        return jsonify({"error": "Invalid gesture name " + message}), 400
 
     lastPose = message
 
@@ -63,12 +62,14 @@ def goToStand():
 
     gesture_class = GESTURE_MAP.get(lastPose)
     if not gesture_class:
-        return jsonify({"error": "Invalid reverse gesture name" + lastPose}), 400
+        return jsonify({"error": "Invalid reverse gesture name " + lastPose}), 400
 
     if reverse:
         gesture_class.execute_gesture(NAO_IP, NAO_PORT)
     else:
         gesture_class.execute_gesture(NAO_IP, NAO_PORT, reverse=True)
+
+    lastPose = "Stand"
 
     return jsonify({"message": "Gesture executed"}), 200
 

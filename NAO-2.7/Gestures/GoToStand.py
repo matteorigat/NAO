@@ -109,32 +109,41 @@ times.append([2.44])
 keys.append([0.0932922])
 
 def execute_gesture(IP, PORT, reverse=False):
-  """Esegue il gesto sulla robot NAO"""
-  try:
-      # Calcoliamo il tempo totale (l'ultimo tempo nella lista dei tempi)
-      total_time = times[0][-1]  # Consideriamo l'ultimo valore di tempo per il calcolo
+    """Esegue il gesto sulla robot NAO"""
+    try:
+        # Prepara i dizionari per memorizzare i tempi e i keyframe invertiti
+        reversed_times = []
+        reversed_keys = []
 
-      if reverse:
-          reversed_times = []
-          reversed_keys = []
+        if reverse:
+            total_time = 0
+            for i in range(len(times)):
+                if times[i][-1] > total_time:
+                    total_time = times[i][-1]
+                    
+            # Calcoliamo i nuovi tempi invertiti e i keyframe corrispondenti
+            for i, name in enumerate(names):
+                # Invertiamo i tempi come richiesto (total_time - time)
+                reversed_times_for_joint = [total_time - t for t in times[i]]
+                reversed_times_for_joint.sort()  # Ordinare i tempi in ordine crescente
 
-          # Calcoliamo i nuovi tempi inversi e i keyframe corrispondenti
-          for i, name in enumerate(names):
-              reversed_times_for_joint = [total_time - t for t in times[i]]  # Invertiamo i tempi
-              reversed_keys_for_joint = list(reversed(keys[i]))  # Invertiamo i keyframe
-              reversed_times.append(reversed_times_for_joint)
-              reversed_keys.append(reversed_keys_for_joint)
-      else:
-          reversed_times = times
-          reversed_keys = keys
+                # Invertiamo i keyframe mantenendo la corrispondenza con i nuovi tempi
+                reversed_keys_for_joint = list(reversed(keys[i]))  # Invertiamo i keyframe
 
-      motion = ALProxy("ALMotion", IP, PORT)
-      motion.angleInterpolation(names, reversed_keys, reversed_times, True)
-  except BaseException as err:
-      print(err)
+                reversed_times.append(reversed_times_for_joint)
+                reversed_keys.append(reversed_keys_for_joint)
+        else:
+            reversed_times = times
+            reversed_keys = keys
 
-# Permette di eseguire lo script direttamente
-if __name__ == "__main__":
-  NAO_IP = "127.0.0.1"
-  NAO_PORT = 9559
-  execute_gesture(NAO_IP, NAO_PORT)
+        for i in range(len(reversed_times)):
+            if reversed_times[i][0] <= 0:
+                reversed_times[i][0] = 0.1
+
+
+        # Esegui il gesto sul robot NAO
+        motion = ALProxy("ALMotion", IP, PORT)
+        motion.angleInterpolation(names, reversed_keys, reversed_times, True)
+
+    except BaseException as err:
+        print(err)

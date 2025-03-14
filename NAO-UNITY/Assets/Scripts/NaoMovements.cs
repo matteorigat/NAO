@@ -117,7 +117,7 @@ public class NaoMovements : MonoBehaviour
 
         var (motionKeys, motionTimes) = MotionExtractor.ExtractMotionData(filePath);
         
-        for (int i = 0; i < motionKeys.Count; i++)
+        /*for (int i = 0; i < motionKeys.Count; i++)
         {
             var jointName = motionKeys.Keys.ElementAt(i);
 
@@ -126,7 +126,7 @@ public class NaoMovements : MonoBehaviour
 
             Debug.Log($"Joint: {jointName} - Keys: {string.Join(", ", jointKeys)} - Times: {string.Join(", ", jointTimes)}");
             if(i == 3) break;
-        }
+        }*/
 
         foreach (var entry in motionTimes)
         {
@@ -138,7 +138,8 @@ public class NaoMovements : MonoBehaviour
                 }
             }
         }
-
+        
+        
         if (reverse)
         {
             Debug.Log("reverseeee");
@@ -146,7 +147,6 @@ public class NaoMovements : MonoBehaviour
             var reversedTimes = new Dictionary<string, List<float>>();
             var reversedKeys = new Dictionary<string, List<float>>();
 
-            // Inverti i tempi e i keyframe
             foreach (var entry in motionTimes)
             {
                 string jointName = entry.Key;
@@ -154,13 +154,22 @@ public class NaoMovements : MonoBehaviour
 
                 // Invertiamo i tempi
                 List<float> reversedJointTimes = jointTimes.Select(time => totalDuration - time).ToList();
+    
+                // Ordinare i tempi crescentemente
+                reversedJointTimes.Sort();
                 reversedTimes[jointName] = reversedJointTimes;
 
-                // Invertiamo i keyframe (assumiamo che motionKeys abbia i keyframe per ciascun giunto)
+                // Invertiamo i keyframe mantenendo la corrispondenza con i nuovi tempi
                 if (motionKeys.ContainsKey(jointName))
                 {
                     List<float> jointKeys = motionKeys[jointName];
-                    List<float> reversedJointKeys = jointKeys.AsEnumerable().Reverse().ToList();
+
+                    // Associare i keyframe ai nuovi tempi invertiti
+                    Dictionary<float, float> timeKeyMap = jointTimes.Zip(jointKeys, (t, k) => new { t, k })
+                        .ToDictionary(x => totalDuration - x.t, x => x.k);
+
+                    // Estrarre i keyframe rispettando i nuovi tempi ordinati
+                    List<float> reversedJointKeys = reversedJointTimes.Select(t => timeKeyMap[t]).ToList();
                     reversedKeys[jointName] = reversedJointKeys;
                 }
             }
@@ -168,7 +177,7 @@ public class NaoMovements : MonoBehaviour
             motionKeys = reversedKeys;
             motionTimes = reversedTimes;
             
-            for (int i = 0; i < motionKeys.Count; i++)
+            /*for (int i = 0; i < motionKeys.Count; i++)
             {
                 var jointName = motionKeys.Keys.ElementAt(i);
 
@@ -177,7 +186,7 @@ public class NaoMovements : MonoBehaviour
 
                 Debug.Log($"Joint: {jointName} - Keys: {string.Join(", ", jointKeys)} - Times: {string.Join(", ", jointTimes)}");
                 if(i == 3) break;
-            }
+            }*/
         }
 
         while (elapsedTime < totalDuration)

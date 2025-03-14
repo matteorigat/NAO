@@ -136,15 +136,13 @@ def index():
 
 @app.route('/questions')
 def questions():
-    send_message("Stand")
-    time.sleep(5)
     send_message(gestures_list[welcome_int][0])
     return render_template("questions.html")
 
 @app.route('/repeat', methods=['POST'])
 def repeat():
     send_message("Stand")
-    time.sleep(5)
+    time.sleep(2)
     send_message(gestures_list[welcome_int][0])
     return jsonify({"message": "Ripetizione eseguita"}), 200
 
@@ -156,6 +154,7 @@ def thanks():
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    send_message("Stand")
 
     global welcome_int
     # Controlla se l'utente ha un ID (assegnato al momento dell'accesso)
@@ -207,6 +206,7 @@ def submit():
             return jsonify({"message": "Change window."}), 303
 
         else:
+            time.sleep(2)
             send_message(gestures_list[welcome_int][0])
 
 
