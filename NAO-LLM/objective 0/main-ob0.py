@@ -72,6 +72,7 @@ def open_window():
     if welcome_int == 0:
         return render_template("virtual.html")
     elif welcome_int == 1:
+        send_message("start")
         return render_template("real.html")
 
 
@@ -81,11 +82,14 @@ def index():
 
     if welcome_int != -1:
         return open_window()
-    else:
-        if random.choice([True, False]):
-            welcome_int = 1
-        else:
-            welcome_int = 0
+    
+    # else:
+    #     if random.choice([True, False]):
+    #         welcome_int = 1
+    #     else:
+    #         welcome_int = 0
+
+    welcome_int = 1
 
     global gestures_list
     gestures_list = [[], []]
@@ -136,13 +140,15 @@ def index():
 
 @app.route('/questions')
 def questions():
+    if welcome_int == -1:
+        return redirect(url_for('index'))
     send_message(gestures_list[welcome_int][0])
     return render_template("questions.html")
 
 @app.route('/repeat', methods=['POST'])
 def repeat():
     send_message("Stand")
-    time.sleep(2)
+    time.sleep(3)
     send_message(gestures_list[welcome_int][0])
     return jsonify({"message": "Ripetizione eseguita"}), 200
 

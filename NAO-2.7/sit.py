@@ -20,7 +20,7 @@ try:
     time.sleep(1)
 
     # Far sedere il robot
-    posture.goToPosture("Crouch", 0.5)
+    #posture.goToPosture("Crouch", 0.5)
 
     # Disattivazione dei motori (per risparmiare energia)
     motion.rest()

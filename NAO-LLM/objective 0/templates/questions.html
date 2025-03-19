@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <title>Feedback Emoji</title>
 </head>
@@ -17,7 +18,7 @@
     </div>
 
     <br>
-    <h2>quanto è felice?</h2>
+    <h2>quanto l'emozione è negativa o positiva?</h2>
     <div class="sam-container">
         <img src="static/sam_scale_valence.png" alt="SAM Scale valence">
     </div>
@@ -35,7 +36,7 @@
     </div>
 
     <br>
-    <h2>quanto è eccitato?</h2>
+    <h2>quanto è tranquillo o agitato?</h2>
     <div class="sam-container">
         <img src="static/sam_scale_arousal.png" alt="SAM Scale arousal">
     </div>

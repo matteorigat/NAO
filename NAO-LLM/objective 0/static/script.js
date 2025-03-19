@@ -4,17 +4,18 @@ function sendFeedback() {
     const selectedSAM2 = document.querySelector('input[name="sam-arousal"]:checked');
 
     if (!selectedEmoji) {
-        alert('Seleziona un\'emoji!');
+        //alert('Seleziona un\'emoji!');
         return;
     }
     if (!selectedSAM) {
-        alert('Seleziona un valore per il primo SAM!');
+       // alert('Seleziona un valore per il primo SAM!');
         return;
     }
     if (!selectedSAM2) {
-        alert('Seleziona un valore per il secondo SAM!');
+        //alert('Seleziona un valore per il secondo SAM!');
         return;
     }
+
 
     resetPage()
 

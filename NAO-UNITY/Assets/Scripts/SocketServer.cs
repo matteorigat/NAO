@@ -183,17 +183,17 @@ public class SocketServer : MonoBehaviour
                     if(lastPose == "Stand")
                         break;
                     
-                    Debug.Log("LastPose: " + lastPose);
+                    //Debug.Log("LastPose: " + lastPose);
                     if(lastPose == "Fear3" || lastPose == "Sadness3")
                         StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +"reverse.txt"));
                     else
                         StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +".txt", true));
-                    Debug.Log("Performed stand: "+ message);
+                    //Debug.Log("Performed stand: "+ message);
                     lastPose = "Stand";
                     break;
                 
                 case var mess when gesturesList.Contains(mess): // Controllo se message è in gesturesList
-                    Debug.Log("Perform gesture: " + message);
+                    //Debug.Log("Perform gesture: " + message);
                     StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + message + ".txt"));
                     lastPose = message;
                     break;

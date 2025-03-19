@@ -11,9 +11,12 @@ from Gestures import Sadness3reverse, Fear3reverse
 
 app = Flask(__name__)
 
-#NAO_IP = "192.168.1.166"
-NAO_IP = "127.0.0.1"
+NAO_IP = "192.168.1.166"
+#NAO_IP = "127.0.0.1"
 NAO_PORT = 9559
+
+postureProxy = ALProxy("ALRobotPosture", NAO_IP, NAO_PORT)
+motionProxy = ALProxy("ALMotion", NAO_IP, NAO_PORT)
 
 lastPose = "Stand"
 
@@ -25,7 +28,6 @@ GESTURE_MAP = {
     "Sadness3reverse": Sadness3reverse, "Fear3reverse": Fear3reverse
 }
 
-
 @app.route('/gesture', methods=['POST'])
 def gesture():
     data = request.json
@@ -33,6 +35,10 @@ def gesture():
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
+
+    if message == "start":
+        postureProxy.goToPosture("Stand", 0.5)
+        return jsonify({"message": "Gesture executed"}), 200
 
     global lastPose
     if(message == "Stand" and lastPose != "Stand"):
@@ -76,11 +82,18 @@ def goToStand():
 
 
 if __name__ == "__main__":
-    # Avvia il server Flask in un thread separato
-    server_thread = threading.Thread(target=lambda: app.run(host='127.0.0.1', port=6666))
-    server_thread.daemon = True
-    server_thread.start()
+
+    try:
+        # Avvia il server Flask in un thread separato
+        server_thread = threading.Thread(target=lambda: app.run(host='127.0.0.1', port=6666))
+        server_thread.daemon = True
+        server_thread.start()
 
 
-    print("Premi INVIO per terminare il programma.")
-    raw_input()  # Attendi che l'utente prema INVIO
+        print("Premi INVIO per terminare il programma.")
+        raw_input()  # Attendi che l'utente prema INVIO
+
+    finally:
+        motionProxy.rest()
+
+        print("Programma terminato.")
