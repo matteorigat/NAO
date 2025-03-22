@@ -1,55 +1,20 @@
-import cv2
+import speech_recognition as sr
 
-# Load the pre-trained Haar Cascade Classifier for face detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+# Inizializza il riconoscitore
+recognizer = sr.Recognizer()
 
-# Initialize the video capture object
-cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
+# Usa il microfono per catturare l'audio
+with sr.Microphone() as source:
+    print("Parla ora...")
+    recognizer.adjust_for_ambient_noise(source)  # Migliora la qualità dell'audio
+    audio = recognizer.listen(source, phrase_time_limit=30, timeout=None)
+    text = recognizer.recognize_google(audio, language="it-IT")
 
-# Initialize the tracker variable
-tracker = None
-tracking_face = False
+    try:
+        # Riconoscimento vocale con Google
 
-while True:
-    # Read a frame from the video capture
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    frame = cv2.flip(frame, 1)
-    # Convert the frame to grayscale for face detection
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    if not tracking_face:
-        # Detect faces in the grayscale frame
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
-        if len(faces) > 0:
-            # Select the first detected face (you can modify this to select a specific face)
-            x, y, w, h = faces[0]
-            tracker = cv2.TrackerCSRT_create()
-            tracker.init(frame, (x, y, w, h))
-            tracking_face = True
-            print("Face detected and tracking started.")
-    else:
-        # Update the tracker
-        success, bbox = tracker.update(frame)
-        if success:
-            # Draw a rectangle around the tracked face
-            x, y, w, h = [int(v) for v in bbox]
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        else:
-            tracking_face = False
-            print("Lost track of the face. Re-detecting.")
-            tracker = None
-
-    # Display the resulting frame
-    cv2.imshow('Face Tracking', frame)
-
-    # Break the loop if the 'q' key is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Release the video capture object and close all OpenCV windows
-cap.release()
-cv2.destroyAllWindows()
+        print(f"Hai detto: {text}")
+    except sr.UnknownValueError:
+        print("Non ho capito, riprova.")
+    except sr.RequestError as e:
+        print(f"Errore nella richiesta a Google: {e}")

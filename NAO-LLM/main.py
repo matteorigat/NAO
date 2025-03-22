@@ -14,7 +14,7 @@ def main():
     while True:
         try:
             global uploader
-            uploader= serverLLM.request_audio()
+            uploader = serverLLM.request_audio()
             if uploader:
                 response = serverLLM.analyze_audio(uploader)
                 serverLLM.say(response)

@@ -14,7 +14,6 @@ public class SocketServer : MonoBehaviour
     private bool isRunning = false;
 
     public GameObject robotPrefab; // Riferimento al prefab del robot
-    //private Animator robotAnimator; // Riferimento al componente Animator
     private EyeLEDController eyeLEDController;
     private volatile float faceX = float.NaN;
     private volatile float faceY = float.NaN;
@@ -30,20 +29,37 @@ public class SocketServer : MonoBehaviour
     };
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>(); // Coda thread-safe
+    
+    
+    // --- Variabili per la gestione della testa ---
+    private Transform head;
+    private Quaternion headInitialRotation;  // Rotazione iniziale della testa (al caricamento)
+    private bool isHeadTrackingActive = true; // Stato del tracking della testa
+    private bool isHeadAnimating = false;    // Indica se un'animazione (gesto) è in corso
+
+    // Variabili per l'interpolazione
+    private bool isInterpolating = false;
+    private Quaternion interpolationStartRotation;
+    private Quaternion interpolationTargetRotation;
+    private float interpolationStartTime;
+    private float interpolationDuration = 0.3f; 
 
     void Start()
     {
         if (robotPrefab != null)
         {
-            //robotAnimator = robotPrefab.GetComponent<Animator>();
             eyeLEDController = robotPrefab.GetComponent<EyeLEDController>();
             NaoMovements = robotPrefab.GetComponent<NaoMovements>();
-            
-            //if (robotAnimator == null)
-            //{
-             //   Debug.LogError("Il prefab del robot non ha un componente Animator.");
-             //   return;
-            //} 
+            head = robotPrefab.transform.Find("Armature/Torso/Head");
+            if (head != null)
+            {
+                headInitialRotation = head.localRotation; // Salva la rotazione iniziale
+            }
+            else
+            {
+                Debug.LogError("Nodo Head non trovato!");
+                return;
+            }
         }
         else
         {
@@ -71,7 +87,6 @@ public class SocketServer : MonoBehaviour
                     if (server.Pending())
                     {
                         TcpClient client = server.AcceptTcpClient();
-                        //Debug.Log("Client connesso!");
                         NetworkStream stream = client.GetStream();
 
                         byte[] buffer = new byte[1024];
@@ -79,7 +94,6 @@ public class SocketServer : MonoBehaviour
                         if (bytesRead > 0)
                         {
                             string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                            //Debug.Log("Messaggio ricevuto: " + message);
 
                             // Aggiungi il messaggio alla coda
                             messageQueue.Enqueue(message);
@@ -107,22 +121,33 @@ public class SocketServer : MonoBehaviour
             ProcessMessage(message);
         }
         
-        //robotAnimator.enabled = false;
-        MoveHeadTowards(faceX, faceY);
-        //robotAnimator.enabled = true;
+        if (isHeadTrackingActive && !isHeadAnimating)  // Muovi SOLO se tracking attivo e nessuna animazione
+        {
+            if (isInterpolating)
+            {
+                InterpolateHead(); // Applica l'interpolazione
+            }
+            else
+            {
+                MoveHeadTowards(faceX, faceY); // O muovi verso il volto
+            }
+        }
+        else if (!isHeadTrackingActive && isInterpolating) // Interpolazione verso la posizione iniziale
+        {
+            InterpolateHead();
+        }
     }
     
     void MoveHeadTowards(float faceX, float faceY)
     {
-        if (float.IsNaN(faceX) || float.IsNaN(faceY))
-            return;  
+        if (float.IsNaN(faceX) || float.IsNaN(faceY) || head == null) return;  
         
         // Normalizza le coordinate in un range [-1, 1]
         float normalizedX = -Mathf.Clamp((faceX / 1280f) * 2f - 1f , -1f, 1f); // Adatta la risoluzione della videocamera
         float normalizedY = Mathf.Clamp((faceY / 720f) * 2f - 1.3f , -1f, 1f);
 
         // Trova il nodo della testa
-        Transform head = robotPrefab.transform.Find("Armature/Torso/Head");
+        /*Transform head = robotPrefab.transform.Find("Armature/Torso/Head");
 
         if (head != null)
         {
@@ -136,23 +161,61 @@ public class SocketServer : MonoBehaviour
         else
         {
             Debug.LogWarning("Nodo mixamorig:Head non trovato nella gerarchia del robot.");
+        }*/
+
+        float maxRotationAngle = 20f;
+        Quaternion targetRotation = Quaternion.Euler(0f, normalizedX * maxRotationAngle, normalizedY * maxRotationAngle);
+
+        // Avvia l'interpolazione verso la nuova posizione
+        StartInterpolation(targetRotation, 0.1f);
+    }
+    
+    void StartInterpolation(Quaternion targetRotation, float duration)
+    {
+        if (head == null) return; // Controllo di sicurezza
+
+        interpolationStartRotation = head.localRotation;
+        interpolationTargetRotation = targetRotation;
+        interpolationStartTime = Time.time;
+        interpolationDuration = duration; // Imposta la durata specifica
+        isInterpolating = true;
+    }
+
+    void InterpolateHead()
+    {
+        if (head == null)
+        {
+            isInterpolating = false; // Interrompi se head è nullo
+            return;
+        }
+
+
+        float t = (Time.time - interpolationStartTime) / interpolationDuration;
+        if (t < 1.0f)
+        {
+            head.localRotation = Quaternion.Slerp(interpolationStartRotation, interpolationTargetRotation, t);
+        }
+        else
+        {
+            head.localRotation = interpolationTargetRotation; // Imposta la rotazione finale
+            isInterpolating = false;  // Ferma l'interpolazione
         }
     }
 
     void ProcessMessage(string message)
     {
-        //if (robotAnimator == null || eyeLEDController == null) return;
         if (eyeLEDController == null) return;
-        
-        //robotAnimator.CrossFade("empty_animation", 0f); 
         
         if (message.StartsWith("face_position:"))
         {
             string[] parts = message.Replace("face_position:", "").Split(',');
             if (parts.Length == 2 && float.TryParse(parts[0], out float faceX) && float.TryParse(parts[1], out float faceY))
             {
-                this.faceX = faceX;
-                this.faceY = faceY;
+                if (isHeadTrackingActive)
+                {
+                    this.faceX = faceX;
+                    this.faceY = faceY;
+                }
                 
             }
         }
@@ -169,32 +232,54 @@ public class SocketServer : MonoBehaviour
                     Debug.Log("Comando Loading ricevuto!");
                     eyeLEDController.isRotating = true;
                     StartCoroutine(eyeLEDController.RotateEyes());
-                    //robotAnimator.CrossFade("Armature|HeadYes", 0.25f);
                     break;
 
                 case "speaking":
                     Debug.Log("Comando Speaking ricevuto!");
                     eyeLEDController.isRotating = false;
                     eyeLEDController.SpeakingLEDs();
-                    //robotAnimator.CrossFade("Armature_GatherBothHandsInFront_001", 0.25f);
                     break;
                 
                 case "Stand":
                     if(lastPose == "Stand")
                         break;
+
+                    float timeLeft = NaoMovements.IsPlayingTime();
                     
                     //Debug.Log("LastPose: " + lastPose);
                     if(lastPose == "Fear3" || lastPose == "Sadness3")
-                        StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +"reverse.txt"));
+                        Invoke(nameof(PlayGestureReverse), timeLeft);
                     else
-                        StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +".txt", true));
+                        Invoke(nameof(PlayGestureReverse2), timeLeft);
                     //Debug.Log("Performed stand: "+ message);
-                    lastPose = "Stand";
+                    
+                    isHeadTrackingActive = true;
+                    isHeadAnimating = false;
+                    
+                    if (!float.IsNaN(faceX) && !float.IsNaN(faceY))
+                    {
+                        MoveHeadTowards(faceX, faceY); // Usa MoveHeadTowards per calcolare la rotazione target
+                    }
+                    else
+                    {
+                        StartInterpolation(headInitialRotation, 0.3f);   // Interpola verso il centro
+                    }
                     break;
                 
                 case var mess when gesturesList.Contains(mess): // Controllo se message è in gesturesList
+                    isInterpolating = false;
+
+                    // 2. Salva la rotazione corrente della testa come punto di partenza per l'interpolazione
+                    if(head != null)
+                        interpolationStartRotation = head.localRotation;
+
+                    isHeadTrackingActive = false;
+                    isHeadAnimating = true;
+                    
+                    StartInterpolation(headInitialRotation, 0.5f);
+                    
                     //Debug.Log("Perform gesture: " + message);
-                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + message + ".txt"));
+                    Invoke(nameof(PlayGesture), 0.5f);
                     lastPose = message;
                     break;
 
@@ -202,6 +287,34 @@ public class SocketServer : MonoBehaviour
                     Debug.Log("Comando non riconosciuto: " + message);
                     break;
             }
+        }
+    }
+    
+    void PlayGesture()
+    {
+        if (NaoMovements != null)
+        {
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + lastPose + ".txt"));
+
+        }
+    }
+    
+    void PlayGestureReverse()
+    {
+        if (NaoMovements != null)
+        {
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + lastPose + "reverse.txt"));
+            lastPose = "Stand";
+        }
+    }
+    
+    void PlayGestureReverse2()
+    {
+        if (NaoMovements != null)
+        {
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +".txt", true));
+            lastPose = "Stand";
+
         }
     }
 

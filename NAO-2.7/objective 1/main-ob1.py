@@ -1,8 +1,15 @@
+import re
 import time
 import threading
 import requests
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
+
+from Gestures import Happiness1, Happiness2, Happiness3
+from Gestures import Sadness1, Sadness2, Sadness3
+from Gestures import Anger1, Anger2, Anger3
+from Gestures import Fear1, Fear2, Fear3
+from Gestures import Sadness3reverse, Fear3reverse
 
 # Configurazione del server Flask
 app = Flask(__name__)
@@ -27,29 +34,15 @@ rotate_event = threading.Event()
 tracking_event = threading.Event()
 track_thread = threading.Thread()
 
+GESTURE_MAP = {
+    "Anger1": Anger1, "Anger2": Anger2, "Anger3": Anger3,
+    "Fear1": Fear1, "Fear2": Fear2, "Fear3": Fear3,
+    "Happiness1": Happiness1, "Happiness2": Happiness2, "Happiness3": Happiness3,
+    "Sadness1": Sadness1, "Sadness2": Sadness2, "Sadness3": Sadness3,
+    "Sadness3reverse": Sadness3reverse, "Fear3reverse": Fear3reverse
+}
 
-@app.route('/say', methods=['POST'])
-def say():
-    rotate_event.clear()
-    leds.fadeRGB("FaceLeds", 0xffffff, 0.2)
-
-    data = request.json
-    message = data.get('message')
-
-    if not message:
-        return jsonify({"error": "No message provided"}), 400
-
-    configuration = {"bodyLanguageMode": "random"}
-
-    try:
-        tts.stopAll()
-        message_utf8 = message.encode('utf-8')
-        print ("Sending message to NAO: ", message_utf8)
-        #tts.say(message_utf8)   #"\\style=joyful\\ " +
-        animate.say(message_utf8, configuration)
-        return jsonify({"status": "Message sent to NAO"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+lastPose = "Stand"
 
 
 @app.route('/say_to_file', methods=['POST'])
@@ -70,6 +63,92 @@ def say_to_file():
         return jsonify({"status": "Message sent to NAO"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/say', methods=['POST'])
+def say():
+    rotate_event.clear()
+    leds.fadeRGB("FaceLeds", 0xffffff, 0.2)
+
+    data = request.json
+    message = data.get('message')
+
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    #configuration = {"bodyLanguageMode": "random"}
+
+    segments = re.split(r'(\[.*?\])', message)
+
+    try:
+        for segment in segments:
+            # Prima di ogni segmento, invia il tag (se presente)
+            if segment.startswith("[") and segment.endswith("]"):
+                if segment[1:-1] == "rst":
+                    gesture("Stand")
+                    continue
+                if segment[1:-1] == "happy":
+                    gesture("Happiness1")  # Invio del tag
+                elif segment[1:-1] == "sad":
+                    gesture("Sadness1")
+                elif segment[1:-1] == "fear":
+                    gesture("Fear1")
+                elif segment[1:-1] == "angry":
+                    gesture("Anger1")
+                print("sent tag: " + segment[1:-1])
+
+            elif segment.strip():
+                # Pronuncia il segmento
+                #tts.stopAll()
+                message_utf8 = segment.encode('utf-8')
+                print ("Sending message to NAO: ", message_utf8)
+                tts.say(message_utf8)
+
+        return jsonify({"status": "Message sent to NAO"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def gesture(message):
+
+    if not message:
+        return
+
+    if message == "start":
+        postureProxy.goToPosture("Stand", 0.5)
+        return
+
+    global lastPose
+    if(message == "Stand" and lastPose != "Stand"):
+        return goToStand()
+
+    # Controlla se il messaggio corrisponde a un gesto valido
+    gesture_class = GESTURE_MAP.get(message)
+    if not gesture_class:
+        return
+
+    lastPose = message
+
+    gesture_class.execute_gesture(NAO_IP, NAO_PORT)
+
+def goToStand():
+    global lastPose
+    reverse = False
+
+    if (lastPose == "Sadness3" or lastPose == "Fear3"):
+        lastPose += "reverse"
+        reverse = True
+
+    gesture_class = GESTURE_MAP.get(lastPose)
+    if not gesture_class:
+        return
+
+    if reverse:
+        gesture_class.execute_gesture(NAO_IP, NAO_PORT)
+    else:
+        gesture_class.execute_gesture(NAO_IP, NAO_PORT, reverse=True)
+
+    # posture.goToPosture("Stand", 0.5)
+    lastPose = "Stand"
 
 
 
@@ -279,6 +358,8 @@ def on_touch_head():
                 rotate_event.clear()
             leds.off("FaceLeds")
             motionProxy.stopMove()  # Ferma il movimento
+            #postureProxy.goToPosture("Stand", 0.5)
+            #lastPose = "Stand"
             tts.stopAll()  # Ferma la voce
             # postureProxy.goToPosture("Stand", 0.5)  # Torna in posizione idle
             print("NAO in stato idle.")
@@ -288,11 +369,14 @@ def on_touch_head():
 
 if __name__ == '__main__':
 
+    global lastPose
+
     user_input = raw_input("\nPress any button for stand up NAO\n")
 
     if user_input:
         # motionProxy.setStiffnesses("Body", 1)
         postureProxy.goToPosture("Stand", 0.5)  # Assume la posizione in piedi
+        lastPose = "Stand"
 
         tracking_event.set()
         track_thread = threading.Thread(target=trackFace)

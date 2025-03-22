@@ -25,16 +25,16 @@ generation_config = {
 }
 
 model = genai.GenerativeModel(
-  #model_name="gemini-1.5-flash-8b-exp-0924",
+  #model_name="gemini-2.0-flash-exp",
   model_name="gemini-1.5-flash",
   generation_config=generation_config,
   system_instruction= """
   Sei il robot Nao.
   Rispondi alla domanda naturalmente e non ripetere mai le parole dell'altra persona.
-  Usa i token vocali [joy], [happy], [sad], [angry], [surprised], [fear], [calm] all’inizio di frasi o parole per cambiare tono di voce.
+  Usa i token vocali [happy], [sad], [angry], [fear] all’inizio di frasi o parole per cambiare tono di voce.
   Usa il token [rst] quando vuoi riportare il tono a uno stato neutro.
-  Mantieni per lo più un tono neutrale ed utilizza il modello di Russell per gestire le 8 emozioni.
-  """,
+  Mantieni per lo più un tono neutrale ed utilizza il modello di Russell per gestire le 5 emozioni.
+  """,  #[joy], [happy], [sad], [angry], [surprised], [fear], [calm]
   safety_settings= [
                 {
                     'category': 'HARM_CATEGORY_HATE_SPEECH',
@@ -135,15 +135,15 @@ def analyze_text(text):
 
 def replace_emotion_tags(message):
     replacements = {
-        r"\[joy\]": r"\\vct=105\\ \\rspd=110\\ \\vol=90\\",
-        r"\[happy\]": r"\\vct=105\\ \\rspd=105\\ \\vol=80\\",
-        r"\[sad\]": r"\\vct=97\\ \\rspd=90\\ \\vol=50\\",
-        r"\[angry\]": r"\\vct=99\\ \\rspd=120\\ \\vol=100\\",
-        r"\[surprised\]": r"\\vct=110\\ \\rspd=120\\ \\vol=90\\",
-        r"\[fear\]": r"\\vct=95\\ \\rspd=115\\ \\vol=80\\",
-        r"\[calm\]": r"\\vct=102\\ \\rspd=98\\ \\vol=70\\",
+        r"\[happy\]": r"[happy]\\vct=105\\ \\rspd=105\\ \\vol=80\\",
+        r"\[sad\]": r"[sad]\\vct=97\\ \\rspd=90\\ \\vol=50\\",
+        r"\[angry\]": r"[angry]\\vct=99\\ \\rspd=120\\ \\vol=100\\",
+        r"\[fear\]": r"[fear]\\vct=95\\ \\rspd=115\\ \\vol=80\\",
+        # r"\[joy\]": r"\\vct=105\\ \\rspd=110\\ \\vol=90\\",
+        #r"\[surprised\]": r"\\vct=110\\ \\rspd=120\\ \\vol=90\\",
+        #r"\[calm\]": r"\\vct=102\\ \\rspd=98\\ \\vol=70\\",
         r"\[rst\]": r"\\rst\\",
-        r"\[pau[=\s,]*(\d+)\]": r"\\pau=\1\\"
+        #r"\[pau[=\s,]*(\d+)\]": r"\\pau=\1\\"
     }
     for tag, tts_command in replacements.items():
         message = re.sub(tag, tts_command, message, flags=re.IGNORECASE)
@@ -158,6 +158,10 @@ def clean_message(message):
     message = message.strip()
     #print("Messaggio pulito: ", message)
     return message
+
+
+def speak_and_send_tags(tts, text):
+    segments = re.split(r'(\[.*?\])', text)
 
 def say(message):
     start_time = time.time()

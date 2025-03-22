@@ -34,6 +34,7 @@ public class NaoMovements : MonoBehaviour
     private Dictionary<string, JointMovementHand> _jointMapHand;
     private Dictionary<Transform, Quaternions> _jointsUnion;
     private Dictionary<Transform, Quaternion> _jointsOffset;
+    private float _coroutineTime = 0f; 
   
     void Start()
     {
@@ -66,7 +67,6 @@ public class NaoMovements : MonoBehaviour
         
     public IEnumerator PlayMotion(String filePath, bool reverse = false)
     {
-        
         float elapsedTime = 0f;
         float totalDuration = 0f; // Tempo massimo della sequenza
         
@@ -142,7 +142,6 @@ public class NaoMovements : MonoBehaviour
         
         if (reverse)
         {
-            Debug.Log("reverseeee");
             // Inizializza i dizionari per i tempi e i keyframe invertiti
             var reversedTimes = new Dictionary<string, List<float>>();
             var reversedKeys = new Dictionary<string, List<float>>();
@@ -188,6 +187,8 @@ public class NaoMovements : MonoBehaviour
                 if(i == 3) break;
             }*/
         }
+        
+        _coroutineTime = totalDuration;
 
         while (elapsedTime < totalDuration)
         {
@@ -267,8 +268,11 @@ public class NaoMovements : MonoBehaviour
             }
 
             elapsedTime += Time.deltaTime;
+            _coroutineTime = totalDuration - elapsedTime;
             yield return null;
         }
+
+        _coroutineTime = 0f;
     }
 
     float Interpolate(float time, List<float> times, List<float> values)
@@ -286,6 +290,11 @@ public class NaoMovements : MonoBehaviour
         // Interpolazione lineare
         float t = (time - times[index]) / (times[index + 1] - times[index]);
         return Mathf.Lerp(values[index], values[index + 1], t);
+    }
+    
+    public float IsPlayingTime()
+    {
+        return _coroutineTime;
     }
     
     void Update()
