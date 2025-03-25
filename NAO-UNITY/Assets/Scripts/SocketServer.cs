@@ -77,7 +77,7 @@ public class SocketServer : MonoBehaviour
         {
             try
             {
-                server = new TcpListener(IPAddress.Any, 50000); // Porta usata dal server
+                server = new TcpListener(IPAddress.Any, 47777); // Porta usata dal server
                 server.Start();
                 isRunning = true;
                 Debug.Log("Server TCP avviato. In attesa di connessioni...");
@@ -247,11 +247,14 @@ public class SocketServer : MonoBehaviour
                     float timeLeft = NaoMovements.IsPlayingTime();
                     
                     //Debug.Log("LastPose: " + lastPose);
-                    if(lastPose == "Fear3" || lastPose == "Sadness3")
+                    /*if(lastPose == "Fear3" || lastPose == "Sadness3")
                         Invoke(nameof(PlayGestureReverse), timeLeft);
                     else
                         Invoke(nameof(PlayGestureReverse2), timeLeft);
+                        */
                     //Debug.Log("Performed stand: "+ message);
+                    
+                    Invoke(nameof(GoToStand), timeLeft);
                     
                     isHeadTrackingActive = true;
                     isHeadAnimating = false;
@@ -294,8 +297,17 @@ public class SocketServer : MonoBehaviour
     {
         if (NaoMovements != null)
         {
-            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + lastPose + ".txt"));
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/" + lastPose + ".txt"));
 
+        }
+    }
+    
+    void GoToStand()
+    {
+        if (NaoMovements != null)
+        {
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/GoToSTand.txt"));
+            lastPose = "Stand";
         }
     }
     

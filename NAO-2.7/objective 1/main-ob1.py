@@ -5,18 +5,18 @@ import requests
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
 
-from Gestures import Happiness1, Happiness2, Happiness3
-from Gestures import Sadness1, Sadness2, Sadness3
-from Gestures import Anger1, Anger2, Anger3
-from Gestures import Fear1, Fear2, Fear3
-from Gestures import Sadness3reverse, Fear3reverse
+from Gestures_new import Happiness1, Happiness2, Happiness3
+from Gestures_new import Sadness1, Sadness2, Sadness3
+from Gestures_new import Anger1, Anger2, Anger3
+from Gestures_new import Fear1, Fear2, Fear3
+from Gestures_new import Sadness3reverse, Fear3reverse
 
 # Configurazione del server Flask
 app = Flask(__name__)
 
 # Configurazione della connessione con il robot NAO
-NAO_IP = "127.0.0.1"
-#NAO_IP = "192.168.1.166"
+#NAO_IP = "127.0.0.1"
+NAO_IP = "192.168.1.166"
 NAO_PORT = 9559
 
 NAO_USERNAME = "nao"
@@ -64,8 +64,11 @@ def say_to_file():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/say', methods=['POST'])
 def say():
+    global tracking_event, track_thread, lastPose
+
     rotate_event.clear()
     leds.fadeRGB("FaceLeds", 0xffffff, 0.2)
 
@@ -85,8 +88,7 @@ def say():
             if segment.startswith("[") and segment.endswith("]"):
                 if segment[1:-1] == "rst":
                     gesture("Stand")
-                    continue
-                if segment[1:-1] == "happy":
+                elif segment[1:-1] == "happy":
                     gesture("Happiness1")  # Invio del tag
                 elif segment[1:-1] == "sad":
                     gesture("Sadness1")
@@ -103,23 +105,51 @@ def say():
                 print ("Sending message to NAO: ", message_utf8)
                 tts.say(message_utf8)
 
+
+
+
+
+        if(lastPose != "Stand"):
+            postureProxy.goToPosture("Stand", 0.4)
+            lastPose = "Stand"
+
+        if not tracking_event.is_set():
+            tracking_event.set()
+            track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
+            track_thread.start()
+
         return jsonify({"status": "Message sent to NAO"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 def gesture(message):
+    global lastPose
 
     if not message:
         return
 
-    if message == "start":
-        postureProxy.goToPosture("Stand", 0.5)
+    if (message == "Stand" and lastPose == "Stand"):
         return
 
-    global lastPose
-    if(message == "Stand" and lastPose != "Stand"):
-        return goToStand()
+    if message == "start":
+        postureProxy.goToPosture("Stand", 0.5)
+        lastPose = "Stand"
+        return
+
+    if (message == "Stand" and lastPose != "Stand"):
+        postureProxy.goToPosture("Stand", 0.4)
+        lastPose = "Stand"
+        if not tracking_event.is_set():
+            tracking_event.set()
+            track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
+            track_thread.start()
+        return
+
+    global tracking_event, track_thread
+    if tracking_event.is_set():
+        tracking_event.clear()  # Signal the tracking thread to stop
+
 
     # Controlla se il messaggio corrisponde a un gesto valido
     gesture_class = GESTURE_MAP.get(message)
@@ -130,69 +160,31 @@ def gesture(message):
 
     gesture_class.execute_gesture(NAO_IP, NAO_PORT)
 
-def goToStand():
-    global lastPose
-    reverse = False
-
-    if (lastPose == "Sadness3" or lastPose == "Fear3"):
-        lastPose += "reverse"
-        reverse = True
-
-    gesture_class = GESTURE_MAP.get(lastPose)
-    if not gesture_class:
-        return
-
-    if reverse:
-        gesture_class.execute_gesture(NAO_IP, NAO_PORT)
-    else:
-        gesture_class.execute_gesture(NAO_IP, NAO_PORT, reverse=True)
-
-    # posture.goToPosture("Stand", 0.5)
-    lastPose = "Stand"
-
-
-
-# @app.route('/capture_image', methods=['GET'])
-# def capture_image():
-#     video_device = ALProxy("ALVideoDevice", NAO_IP, NAO_PORT)
+# def goToStand():
+#     global lastPose
+#     standardReverse = True
 # 
-#     AL_kTopCamera = 0
-#     AL_kQVGA = 2  # 1: 320x240  2: 640x480
-#     AL_kBGRColorSpace = 13
+#     if (lastPose == "Sadness3" or lastPose == "Fear3"):
+#         lastPose += "reverse"
+#         standardReverse = False
 # 
-#     capture_device = video_device.subscribeCamera("test", AL_kTopCamera, AL_kQVGA, AL_kBGRColorSpace, 10)
-# 
-#     # get image
-#     result = video_device.getImageRemote(capture_device)
-#     video_device.unsubscribe(capture_device)
-# 
-#     if result == None:
-#         return jsonify({"error": "Cannot capture."}), 500
-#     elif result[6] == None:
-#         return jsonify({"error": "No image data string."}), 500
+#     gesture_class = GESTURE_MAP.get(lastPose)
+#     if not gesture_class:
+#         return
 # 
 #     try:
-#         width = result[0]
-#         height = result[1]
-#         array = result[6]
-#         print("Image size: ", width, height)
-# 
-#         # Convert to OpenCV image
-#         openCV_image = np.ndarray((height, width, 3), dtype=np.uint8, buffer=array)
-# 
-#         # Optionally, show the image (for debugging)
-#         #cv2.imshow("capture", openCV_image)
-#         #cv2.waitKey(1)  # Prevent the window from freezing
-# 
-#         # Convert to base64
-#         _, buffer = cv2.imencode('.jpg', openCV_image)  # Convert image to .jpg format
-#         image_base64 = base64.b64encode(buffer).decode('utf-8')
-# 
-#         print("Image sent to client:", image_base64[:50])  # Print first 50 chars of the base64 string
-#         return jsonify({"image": image_base64}), 200
-# 
+#         gesture_class.execute_gesture(NAO_IP, NAO_PORT, reverse=standardReverse)
 #     except Exception as e:
-#         return jsonify({"error": "Failed to process image: {}".format(str(e))}), 500
+#         postureProxy.goToPosture("Stand", 0.5)
+# 
+#     if not tracking_event.is_set():
+#         tracking_event.set()
+#         track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
+#         track_thread.start()
+# 
+#     # posture.goToPosture("Stand", 0.5)
+#     lastPose = "Stand"
+
 
 
 class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio
@@ -337,7 +329,7 @@ def trackFace():
     trackerProxy.track(targetName)
     try:
         while tracking_event.is_set():
-            time.sleep(1)
+            time.sleep(0.5)
     except KeyboardInterrupt:
         print ("Interrupted by user, stopping tracker")
     finally:
@@ -371,7 +363,12 @@ if __name__ == '__main__':
 
     global lastPose
 
-    user_input = raw_input("\nPress any button for stand up NAO\n")
+    import sys
+
+    RED = "\033[91m"  # Codice ANSI per il rosso
+    RESET = "\033[0m"  # Resetta il colore
+
+    user_input = raw_input("\n Press " + RED + "ANY BUTTON" + RESET + " for stand up Nao or " + RED + "ENTER" + RESET + " for virtual nao\n")
 
     if user_input:
         # motionProxy.setStiffnesses("Body", 1)

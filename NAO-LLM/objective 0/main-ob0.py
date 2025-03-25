@@ -53,7 +53,7 @@ def send_message(message):
     global welcome_int
     if welcome_int == 0:
         host = '127.0.0.1'  # Indirizzo IP del server (localhost per Unity)
-        port = 50000  # Porta del server (deve corrispondere a quella in Unity)
+        port = 47777  # Porta del server (deve corrispondere a quella in Unity)
 
 
         try:
@@ -83,13 +83,13 @@ def index():
     if welcome_int != -1:
         return open_window()
     
-    # else:
-    #     if random.choice([True, False]):
-    #         welcome_int = 1
-    #     else:
-    #         welcome_int = 0
+    else:
+        if random.choice([True, False]):
+            welcome_int = 1
+        else:
+            welcome_int = 0
 
-    welcome_int = 1
+    #welcome_int = 1
 
     global gestures_list
     gestures_list = [[], []]

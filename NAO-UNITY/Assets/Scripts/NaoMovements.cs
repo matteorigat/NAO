@@ -34,7 +34,10 @@ public class NaoMovements : MonoBehaviour
     private Dictionary<string, JointMovementHand> _jointMapHand;
     private Dictionary<Transform, Quaternions> _jointsUnion;
     private Dictionary<Transform, Quaternion> _jointsOffset;
-    private float _coroutineTime = 0f; 
+    private float _coroutineTime = 0f;
+
+    private Dictionary<string, float> startMotionKeys;
+    private bool _isFirstMotion = true;
   
     void Start()
     {
@@ -60,8 +63,30 @@ public class NaoMovements : MonoBehaviour
         {
             _jointMapHand[jointHand.jointName] = jointHand;
         }
-        
+
+        _isFirstMotion = true;
         StartCoroutine(PlayMotion("Assets/Scripts/Gestures/GoToStand.txt"));
+    }
+    
+    private void AddCurrentPositionToKeyframes(Dictionary<string, List<float>> motionKeys, Dictionary<string, List<float>> motionTimes)
+    {
+        if (_isFirstMotion)
+        {
+            _isFirstMotion = false;
+            startMotionKeys = new Dictionary<string, float>();
+            foreach (var jointName in motionKeys.Keys)
+            {
+                startMotionKeys[jointName] = 0f;
+            }
+        }
+            
+        foreach (var jointName in motionKeys.Keys)
+        {
+            motionKeys[jointName].Insert(0, startMotionKeys[jointName]);;
+            motionTimes[jointName].Insert(0, 0f);
+
+            startMotionKeys[jointName] = motionKeys[jointName].Last();
+        }
     }
     
         
@@ -69,64 +94,19 @@ public class NaoMovements : MonoBehaviour
     {
         float elapsedTime = 0f;
         float totalDuration = 0f; // Tempo massimo della sequenza
-        
-        // Dati estratti da Choregraphe
-        /*
-        Dictionary<string, List<float>> motionKeys = new Dictionary<string, List<float>>
-        {
-            { "HeadPitch", new List<float> { 0f, 0f } },
-            { "HeadYaw", new List<float> { 0f, 0f } },
-            
-            { "LShoulderPitch", new List<float> { 0f, 1f} },
-            { "LShoulderRoll", new List<float> { 0f, 1f } },
-            { "LElbowYaw", new List<float> { 0f, 0f} },
-            { "LElbowRoll", new List<float> { 0f, 0f } },
-            { "LWristYaw", new List<float> { 0f, 0f } },
-            { "LHand", new List<float> { 0f, 1f } },
-            
-            
-            { "RShoulderPitch", new List<float> { 0f, 0f} },
-            { "RShoulderRoll", new List<float> { 0f, 0f } },
-            { "RElbowYaw", new List<float> { 0f, 0f} },
-            { "RElbowRoll", new List<float> { 0f, 0f } },
-            { "RWristYaw", new List<float> { 0f, 0f } },
-            { "RHand", new List<float> { 0f, 1f } },
-        };
-
-        Dictionary<string, List<float>> motionTimes = new Dictionary<string, List<float>>
-        {
-            { "HeadPitch", new List<float> { 0.5f, 1f} },
-            { "HeadYaw", new List<float> { 0.5f, 1f } },
-            
-            { "LShoulderPitch", new List<float> { 0.5f, 1f } },
-            { "LShoulderRoll", new List<float> { 0.5f, 1f} },
-            { "LElbowYaw", new List<float> { 0.5f, 1f} },
-            { "LElbowRoll", new List<float> { 0.5f, 1f } },
-            { "LWristYaw", new List<float> { 0.5f, 1f } },
-            { "LHand", new List<float> { 0.5f, 1f } },
-            
-            
-            { "RShoulderPitch", new List<float> { 0.5f, 1f } },
-            { "RShoulderRoll", new List<float> { 0.5f, 1f} },
-            { "RElbowYaw", new List<float> { 0.5f, 1f} },
-            { "RElbowRoll", new List<float> { 0.5f, 1f } },
-            { "RWristYaw", new List<float> { 0.5f, 1f } },
-            { "RHand", new List<float> { 0.5f, 1f } },
-        };
-        */
 
         var (motionKeys, motionTimes) = MotionExtractor.ExtractMotionData(filePath);
         
-        /*for (int i = 0; i < motionKeys.Count; i++)
+        if (motionKeys == null || motionTimes == null)
         {
-            var jointName = motionKeys.Keys.ElementAt(i);
-
-            List<float> jointKeys = motionKeys[jointName];
-            List<float> jointTimes = motionTimes[jointName];
-
-            Debug.Log($"Joint: {jointName} - Keys: {string.Join(", ", jointKeys)} - Times: {string.Join(", ", jointTimes)}");
-            if(i == 3) break;
-        }*/
+            Debug.LogError("Errore nell'estrazione dei dati di movimento da: " + filePath);
+            yield break; // Interrompi la coroutine se l'estrazione fallisce
+        }
+        
+        
+        // --- Aggiunta della posizione corrente al tempo 0 ---
+        AddCurrentPositionToKeyframes(motionKeys, motionTimes);
+        
 
         foreach (var entry in motionTimes)
         {

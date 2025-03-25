@@ -16,7 +16,7 @@ dialogue_path = "objective 1/results/dialogue_" + time.strftime("%d-%m-%Y_%H-%M-
 # Funzione per inviare messaggi al server
 def send_message(message):
     host = '127.0.0.1'  # Indirizzo IP del server (localhost per Unity)
-    port = 50000  # Porta del server (deve corrispondere a quella in Unity)
+    port = 47777  # Porta del server (deve corrispondere a quella in Unity)
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -106,7 +106,7 @@ class TextToSpeech:
         self.engine.runAndWait()  # Esegui la sintesi vocale
 
 
-def speak_and_send_tags(tts, text):
+def speak_local_tts(tts, text):
     segments = re.split(r'(\[.*?\])', text)
 
     for segment in segments:
@@ -157,8 +157,8 @@ def count_json_files():
 
 def listen_to_microphone(dialogue):
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = 1  # seconds of non-speaking audio before a phrase is considered complete
-    recognizer.operation_timeout = 4
+    recognizer.pause_threshold = 2  # seconds of non-speaking audio before a phrase is considered complete
+    recognizer.operation_timeout = 5
     microphone = sr.Microphone()
 
     audio_data = None
@@ -177,7 +177,7 @@ def listen_to_microphone(dialogue):
 
                 try:
                     text = recognizer.recognize_google(audio_data, language="it-IT")
-                except sr.UnknownValueError:
+                except Exception as e:
                     audio_data = None
                     continue
 
@@ -203,6 +203,38 @@ def listen_to_microphone(dialogue):
                     return uploader, dialogue
 
 
+def speak_and_send_tags(tts, text):
+    segments = re.split(r'(\[.*?\])', text)
+
+    for segment in segments:
+        # Prima di ogni segmento, invia il tag (se presente)
+        if segment.startswith("[") and segment.endswith("]"):
+            if segment[1:-1] == "rst":
+                send_message("Stand")
+                time.sleep(2)
+                continue
+            if segment[1:-1] == "happy":
+                send_message("Happiness1")  # Invio del tag
+            elif segment[1:-1] == "sad":
+                send_message("Sadness1")
+            elif segment[1:-1] == "fear":
+                send_message("Fear1")
+            elif segment[1:-1] == "angry":
+                send_message("Anger1")
+            print("sent tag: " + segment[1:-1])
+
+        elif segment.strip():
+            # Pronuncia il segmento
+            print(f"Segmento: {segment}")
+            response = serverLLM.say_to_file(segment.strip())
+            if response:
+                playsound(response)
+            #send_message("Stand")
+            #time.sleep(0.5)  # Pausa per simulare il tempo di lettura dell'audio
+
+    send_message("Stand")
+
+
 def main():
     tts = TextToSpeech()
 
@@ -223,15 +255,10 @@ def main():
             save_dialogue(dialogue)
             print(processed_text)
 
-            # response = serverLLM.say_to_file(processed_text)
-            # 
-            # if response:
-            #     send_message("speaking")
-            #     playsound(response)
-
             # Sincronizza i tag con la lettura del testo
             send_message("speaking")
             speak_and_send_tags(tts, processed_text)
+            #speak_local_tts(tts, processed_text)
                 
             
 

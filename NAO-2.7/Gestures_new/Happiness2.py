@@ -5,108 +5,108 @@ times = list()
 keys = list()
 
 names.append("HeadPitch")
-times.append([0, 0.84, 1.56])
-keys.append([-0.17329, -0.164746, -0.436332])
+times.append([0])
+keys.append([-0.17])
 
 names.append("HeadYaw")
-times.append([0, 0.84])
-keys.append([-0.00400687, 0])
+times.append([0])
+keys.append([0])
 
 names.append("LAnklePitch")
-times.append([0, 0.84])
-keys.append([0.0871523, 0.0815694])
+times.append([0])
+keys.append([0.0874194])
 
 names.append("LAnkleRoll")
-times.append([0, 0.84])
-keys.append([-0.107881, -0.103379])
+times.append([0])
+keys.append([-0.110793])
 
 names.append("LElbowRoll")
-times.append([0, 0.84])
-keys.append([-0.421949, -0.403243])
+times.append([0, 1.24])
+keys.append([-0.418595, -1.53764])
 
 names.append("LElbowYaw")
-times.append([0, 0.84])
-keys.append([-1.20049, -1.19119])
+times.append([0, 1.24])
+keys.append([-1.2059, -2.04727])
 
 names.append("LHand")
-times.append([0, 0.84, 1.56])
-keys.append([0.290728, 0.290728, 1])
+times.append([0, 1.24])
+keys.append([0.3, 0.93])
 
 names.append("LHipPitch")
-times.append([0, 0.84])
-keys.append([0.12407, 0.123481])
+times.append([0])
+keys.append([0.127419])
 
 names.append("LHipRoll")
-times.append([0, 0.84])
-keys.append([0.115978, 0.118153])
+times.append([0])
+keys.append([0.119108])
 
 names.append("LHipYawPitch")
-times.append([0, 0.84])
-keys.append([-0.16949, -0.164755])
+times.append([0])
+keys.append([-0.17001])
 
 names.append("LKneePitch")
-times.append([0, 0.84])
-keys.append([-0.0920459, -0.0923279])
+times.append([0])
+keys.append([-0.0923279])
 
 names.append("LShoulderPitch")
-times.append([0, 0.84, 1.56])
-keys.append([1.43935, 0.308037, -0.787143])
+times.append([0, 1.24])
+keys.append([1.4375, 1.33692])
 
 names.append("LShoulderRoll")
-times.append([0, 0.84, 1.56])
-keys.append([0.215447, 0.383972, 0.350811])
+times.append([0])
+keys.append([0.22256])
 
 names.append("LWristYaw")
-times.append([0, 0.84])
-keys.append([0.108394, 0.168904])
+times.append([0, 1.24])
+keys.append([0.0975551, -0.869174])
 
 names.append("RAnklePitch")
-times.append([0, 0.84])
-keys.append([0.0871523, 0.0815694])
+times.append([0])
+keys.append([0.0874193])
 
 names.append("RAnkleRoll")
-times.append([0, 0.84])
-keys.append([0.107877, 0.103375])
+times.append([0])
+keys.append([0.110789])
 
 names.append("RElbowRoll")
-times.append([0, 0.84])
-keys.append([0.421949, 0.403243])
+times.append([0, 1.24])
+keys.append([0.418595, 1.53764])
 
 names.append("RElbowYaw")
-times.append([0, 0.84])
-keys.append([1.20049, 1.19119])
+times.append([0, 1.24])
+keys.append([1.2059, 2.04727])
 
 names.append("RHand")
-times.append([0, 0.84, 1.56])
-keys.append([0.290728, 0.290728, 1])
+times.append([0, 1.24])
+keys.append([0.3, 0.93])
 
 names.append("RHipPitch")
-times.append([0, 0.84])
-keys.append([0.12407, 0.123481])
+times.append([0])
+keys.append([0.127419])
 
 names.append("RHipRoll")
-times.append([0, 0.84])
-keys.append([-0.115972, -0.118147])
+times.append([0])
+keys.append([-0.119102])
 
 names.append("RHipYawPitch")
-times.append([0, 0.84])
-keys.append([-0.16949, -0.164755])
+times.append([0])
+keys.append([-0.17001])
 
 names.append("RKneePitch")
-times.append([0, 0.84])
-keys.append([-0.0920459, -0.0923279])
+times.append([0])
+keys.append([-0.0923279])
 
 names.append("RShoulderPitch")
-times.append([0, 0.84, 1.56])
-keys.append([1.43935, 0.308037, -0.787143])
+times.append([0, 1.24])
+keys.append([1.4375, 1.33692])
 
 names.append("RShoulderRoll")
-times.append([0, 0.84, 1.56])
-keys.append([-0.215447, -0.383972, -0.350811])
+times.append([0])
+keys.append([-0.22256])
 
 names.append("RWristYaw")
-times.append([0, 0.84])
-keys.append([0.0985636, -0.165563])
+times.append([0, 1.24])
+keys.append([0.100506, 0.869174])
 
 def execute_gesture(IP, PORT, reverse=False):
     """Esegue il gesto sulla robot NAO"""
@@ -120,7 +120,7 @@ def execute_gesture(IP, PORT, reverse=False):
             for i in range(len(times)):
                 if times[i][-1] > total_time:
                     total_time = times[i][-1]
-
+                    
             # Calcoliamo i nuovi tempi invertiti e i keyframe corrispondenti
             for i, name in enumerate(names):
                 # Invertiamo i tempi come richiesto (total_time - time)

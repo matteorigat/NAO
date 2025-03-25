@@ -5,108 +5,60 @@ times = list()
 keys = list()
 
 names.append("HeadPitch")
-times.append([0, 0.84, 1.56])
-keys.append([-0.17329, -0.164746, -0.436332])
+times.append([0, 1.52])
+keys.append([0.265341, -0.144238])
 
 names.append("HeadYaw")
-times.append([0, 0.84])
-keys.append([-0.00400687, 0])
-
-names.append("LAnklePitch")
-times.append([0, 0.84])
-keys.append([0.0871523, 0.0815694])
-
-names.append("LAnkleRoll")
-times.append([0, 0.84])
-keys.append([-0.107881, -0.103379])
+times.append([0, 1.52])
+keys.append([-0.604439, -4.19617e-05])
 
 names.append("LElbowRoll")
-times.append([0, 0.84])
-keys.append([-0.421949, -0.403243])
+times.append([0, 1.52])
+keys.append([-0.665714, -0.432547])
 
 names.append("LElbowYaw")
-times.append([0, 0.84])
-keys.append([-1.20049, -1.19119])
+times.append([0, 1.52])
+keys.append([-0.80079, -1.18429])
 
 names.append("LHand")
-times.append([0, 0.84, 1.56])
-keys.append([0.290728, 0.290728, 1])
-
-names.append("LHipPitch")
-times.append([0, 0.84])
-keys.append([0.12407, 0.123481])
-
-names.append("LHipRoll")
-times.append([0, 0.84])
-keys.append([0.115978, 0.118153])
-
-names.append("LHipYawPitch")
-times.append([0, 0.84])
-keys.append([-0.16949, -0.164755])
-
-names.append("LKneePitch")
-times.append([0, 0.84])
-keys.append([-0.0920459, -0.0923279])
+times.append([0, 1.52])
+keys.append([1, 0.2924])
 
 names.append("LShoulderPitch")
-times.append([0, 0.84, 1.56])
-keys.append([1.43935, 0.308037, -0.787143])
+times.append([0, 1.52])
+keys.append([0.167164, 1.42811])
 
 names.append("LShoulderRoll")
-times.append([0, 0.84, 1.56])
-keys.append([0.215447, 0.383972, 0.350811])
+times.append([0, 1.52])
+keys.append([0.650374, 0.197844])
 
 names.append("LWristYaw")
-times.append([0, 0.84])
-keys.append([0.108394, 0.168904])
-
-names.append("RAnklePitch")
-times.append([0, 0.84])
-keys.append([0.0871523, 0.0815694])
-
-names.append("RAnkleRoll")
-times.append([0, 0.84])
-keys.append([0.107877, 0.103375])
+times.append([0, 1.52])
+keys.append([1.25477, 0.118076])
 
 names.append("RElbowRoll")
-times.append([0, 0.84])
-keys.append([0.421949, 0.403243])
+times.append([0, 1.52])
+keys.append([1.44047, 0.412688])
 
 names.append("RElbowYaw")
-times.append([0, 0.84])
-keys.append([1.20049, 1.19119])
+times.append([0, 1.52])
+keys.append([0.866668, 1.18267])
 
 names.append("RHand")
-times.append([0, 0.84, 1.56])
-keys.append([0.290728, 0.290728, 1])
-
-names.append("RHipPitch")
-times.append([0, 0.84])
-keys.append([0.12407, 0.123481])
-
-names.append("RHipRoll")
-times.append([0, 0.84])
-keys.append([-0.115972, -0.118147])
-
-names.append("RHipYawPitch")
-times.append([0, 0.84])
-keys.append([-0.16949, -0.164755])
-
-names.append("RKneePitch")
-times.append([0, 0.84])
-keys.append([-0.0920459, -0.0923279])
+times.append([0, 1.52])
+keys.append([0.2956, 0.2936])
 
 names.append("RShoulderPitch")
-times.append([0, 0.84, 1.56])
-keys.append([1.43935, 0.308037, -0.787143])
+times.append([0, 1.52])
+keys.append([0.549213, 1.4374])
 
 names.append("RShoulderRoll")
-times.append([0, 0.84, 1.56])
-keys.append([-0.215447, -0.383972, -0.350811])
+times.append([0, 1.52])
+keys.append([0.13495, -0.197927])
 
 names.append("RWristYaw")
-times.append([0, 0.84])
-keys.append([0.0985636, -0.165563])
+times.append([0, 1.52])
+keys.append([-0.188724, 0.0843279])
 
 def execute_gesture(IP, PORT, reverse=False):
     """Esegue il gesto sulla robot NAO"""
@@ -120,7 +72,7 @@ def execute_gesture(IP, PORT, reverse=False):
             for i in range(len(times)):
                 if times[i][-1] > total_time:
                     total_time = times[i][-1]
-
+                    
             # Calcoliamo i nuovi tempi invertiti e i keyframe corrispondenti
             for i, name in enumerate(names):
                 # Invertiamo i tempi come richiesto (total_time - time)

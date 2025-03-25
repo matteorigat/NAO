@@ -142,7 +142,7 @@ def replace_emotion_tags(message):
         # r"\[joy\]": r"\\vct=105\\ \\rspd=110\\ \\vol=90\\",
         #r"\[surprised\]": r"\\vct=110\\ \\rspd=120\\ \\vol=90\\",
         #r"\[calm\]": r"\\vct=102\\ \\rspd=98\\ \\vol=70\\",
-        r"\[rst\]": r"\\rst\\",
+        r"\[rst\]": r"[rst]\\rst\\",
         #r"\[pau[=\s,]*(\d+)\]": r"\\pau=\1\\"
     }
     for tag, tts_command in replacements.items():
@@ -297,8 +297,8 @@ def convert_to_ogg(input_wav, output_ogg):
 
 def request_audio():
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = 1  # seconds of non-speaking audio before a phrase is considered complete
-    recognizer.operation_timeout = 4  # increasing the timeout duration
+    recognizer.pause_threshold = 2  # seconds of non-speaking audio before a phrase is considered complete
+    recognizer.operation_timeout = 5  # increasing the timeout duration
     audio_data = None
     audio_path_wav = "./tmp/received_audio.wav"
     audio_path = "./tmp/received_audio.ogg"
@@ -308,12 +308,18 @@ def request_audio():
             print("Recording...")
             start_time = time.time()
             with NaoAudioSource() as source:
+                recognizer.adjust_for_ambient_noise(source)
                 audio_data = recognizer.listen(source, phrase_time_limit=30, timeout=None)
 
-            if time.time() - start_time < 1.0:
-                #print("Audio troppo breve, riprovo...")
-                audio_data = None
-                continue
+                try:
+                    text = recognizer.recognize_google(audio_data, language="it-IT")
+                except Exception as e:
+                    audio_data = None
+                    continue
+
+                if not text.strip() or time.time() - start_time < 1.0:
+                    audio_data = None
+                    continue
 
             print(f"Recording took {time.time() - start_time} seconds")
 
