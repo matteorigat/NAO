@@ -25,8 +25,8 @@ generation_config = {
 }
 
 model = genai.GenerativeModel(
-  #model_name="gemini-2.0-flash-exp",
-  model_name="gemini-1.5-flash",
+  model_name="gemini-2.0-flash-exp",
+  #model_name="gemini-1.5-flash",
   generation_config=generation_config,
   system_instruction= """
   Sei il robot Nao.
@@ -297,8 +297,7 @@ def convert_to_ogg(input_wav, output_ogg):
 
 def request_audio():
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = 2  # seconds of non-speaking audio before a phrase is considered complete
-    recognizer.operation_timeout = 5  # increasing the timeout duration
+    recognizer.pause_threshold = 1.5  # seconds of non-speaking audio before a phrase is considered complete
     audio_data = None
     audio_path_wav = "./tmp/received_audio.wav"
     audio_path = "./tmp/received_audio.ogg"
@@ -334,7 +333,7 @@ def request_audio():
 
                 uploader = upload_to_gemini_threaded(audio_path, mime_type="audio/ogg")
 
-                return uploader
+                return uploader, text
                     
                 # with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
                 #     temp_wav_file.write(audio_data.get_wav_data())

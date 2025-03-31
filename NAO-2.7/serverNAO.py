@@ -31,7 +31,8 @@ track_thread = threading.Thread()
 @app.route('/say', methods=['POST'])
 def say():
     rotate_event.clear()
-    leds.fadeRGB("FaceLeds", 0xffffff, 0.2)
+    leds.off("FaceLeds")
+    leds.fadeRGB("FaceLeds", 0xffffff, 0.5)
 
     data = request.json
     message = data.get('message')
@@ -244,7 +245,10 @@ def rotate_eyes():
                 leds.setIntensity("previousLeds", 0.0)
 
             if not rotate_event.is_set():
+                leds.off("FaceLeds")
                 break
+
+    leds.off("FaceLeds")
 
 
 def trackFace():

@@ -11,7 +11,7 @@ import threading
 import subprocess
 import json
 
-dialogue_path = "objective 1/results/dialogue_" + time.strftime("%d-%m-%Y_%H-%M-%S") + ".json"
+dialogue_path = "objective 1/results_virtual/dialogue_virtual_" + time.strftime("%d-%m-%Y_%H-%M-%S") + ".json"
 
 # Funzione per inviare messaggi al server
 def send_message(message):
@@ -86,51 +86,52 @@ def face_tracking():
     cap.release()
     cv2.destroyAllWindows()
 
-class TextToSpeech:
-    def __init__(self, language="it-IT"):
-        self.engine = pyttsx3.init()  # Inizializza il motore
-        self.engine.setProperty('rate', 160)  # Velocità della voce
-        self.engine.setProperty('volume', 1)  # Volume massimo
+# class TextToSpeech:
+#     def __init__(self, language="it-IT"):
+#         self.engine = pyttsx3.init()  # Inizializza il motore
+#         self.engine.setProperty('rate', 160)  # Velocità della voce
+#         self.engine.setProperty('volume', 1)  # Volume massimo
+# 
+#         # Imposta la voce italiana
+#         voices = self.engine.getProperty('voices')
+#         for voice in voices:
+#             if "Shelley (Italiano (Italia))" in voice.name:
+#                 self.engine.setProperty('voice', voice.id)
+#                 break
+# 
+# 
+#     def speak(self, text):
+#         """Pronuncia il testo in italiano."""
+#         self.engine.say(text)  # Pronuncia il testo
+#         self.engine.runAndWait()  # Esegui la sintesi vocale
+# 
+#
+# def speak_local_tts(tts, text):
+#     segments = re.split(r'(\[.*?\])', text)
+# 
+#     for segment in segments:
+#         # Prima di ogni segmento, invia il tag (se presente)
+#         if segment.startswith("[") and segment.endswith("]"):
+#             if segment[1:-1] == "rst":
+#                 send_message("Stand")
+#                 continue
+#             if segment[1:-1] == "happy":
+#                 send_message("Happiness1")  # Invio del tag
+#             elif segment[1:-1] == "sad":
+#                 send_message("Sadness1")
+#             elif segment[1:-1] == "fear":
+#                 send_message("Fear1")
+#             elif segment[1:-1] == "angry":
+#                 send_message("Anger1")
+#             print("sent tag: " + segment[1:-1])
+# 
+#         elif segment.strip():
+#             # Pronuncia il segmento
+#             print(f"Segmento: {segment}")
+#             tts.speak(segment)
+#             #send_message("Stand")
+#             time.sleep(0.5)  # Pausa per simulare il tempo di lettura dell'audio
 
-        # Imposta la voce italiana
-        voices = self.engine.getProperty('voices')
-        for voice in voices:
-            if "Shelley (Italiano (Italia))" in voice.name:
-                self.engine.setProperty('voice', voice.id)
-                break
-
-
-    def speak(self, text):
-        """Pronuncia il testo in italiano."""
-        self.engine.say(text)  # Pronuncia il testo
-        self.engine.runAndWait()  # Esegui la sintesi vocale
-
-
-def speak_local_tts(tts, text):
-    segments = re.split(r'(\[.*?\])', text)
-
-    for segment in segments:
-        # Prima di ogni segmento, invia il tag (se presente)
-        if segment.startswith("[") and segment.endswith("]"):
-            if segment[1:-1] == "rst":
-                send_message("Stand")
-                continue
-            if segment[1:-1] == "happy":
-                send_message("Happiness1")  # Invio del tag
-            elif segment[1:-1] == "sad":
-                send_message("Sadness1")
-            elif segment[1:-1] == "fear":
-                send_message("Fear1")
-            elif segment[1:-1] == "angry":
-                send_message("Anger1")
-            print("sent tag: " + segment[1:-1])
-
-        elif segment.strip():
-            # Pronuncia il segmento
-            print(f"Segmento: {segment}")
-            tts.speak(segment)
-            #send_message("Stand")
-            time.sleep(0.5)  # Pausa per simulare il tempo di lettura dell'audio
 
 def load_dialogue(filename):
     try:
@@ -149,7 +150,7 @@ def save_dialogue(dialogue):
         json.dump(dialogue, f, indent=4, ensure_ascii=False)
 
 def count_json_files():
-    results_dir = 'objective 1/results/'
+    results_dir = 'objective 1/results_virtual/'
     files = os.listdir(results_dir)
     json_files = [file for file in files if file.endswith('.json')]
     return len(json_files)
@@ -157,8 +158,7 @@ def count_json_files():
 
 def listen_to_microphone(dialogue):
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = 2  # seconds of non-speaking audio before a phrase is considered complete
-    recognizer.operation_timeout = 5
+    recognizer.pause_threshold = 1.5
     microphone = sr.Microphone()
 
     audio_data = None
@@ -177,6 +177,7 @@ def listen_to_microphone(dialogue):
 
                 try:
                     text = recognizer.recognize_google(audio_data, language="it-IT")
+                    print("testo audio riconosciuto: " + text)
                 except Exception as e:
                     audio_data = None
                     continue
@@ -203,7 +204,7 @@ def listen_to_microphone(dialogue):
                     return uploader, dialogue
 
 
-def speak_and_send_tags(tts, text):
+def speak_and_send_tags(text):
     segments = re.split(r'(\[.*?\])', text)
 
     for segment in segments:
@@ -221,11 +222,11 @@ def speak_and_send_tags(tts, text):
                 send_message("Fear1")
             elif segment[1:-1] == "angry":
                 send_message("Anger1")
-            print("sent tag: " + segment[1:-1])
+            #print("sent tag: " + segment[1:-1])
 
         elif segment.strip():
             # Pronuncia il segmento
-            print(f"Segmento: {segment}")
+            #print(f"Segmento: {segment}")
             response = serverLLM.say_to_file(segment.strip())
             if response:
                 playsound(response)
@@ -236,10 +237,14 @@ def speak_and_send_tags(tts, text):
 
 
 def main():
-    tts = TextToSpeech()
+    #tts = TextToSpeech()
 
     global dialogue_path
     dialogue = load_dialogue(dialogue_path)
+
+    response = serverLLM.say_to_file("Ciao")
+    if response:
+        playsound(response)
 
     while True:
         # Ascolta il microfono
@@ -257,7 +262,7 @@ def main():
 
             # Sincronizza i tag con la lettura del testo
             send_message("speaking")
-            speak_and_send_tags(tts, processed_text)
+            speak_and_send_tags(processed_text)
             #speak_local_tts(tts, processed_text)
                 
             

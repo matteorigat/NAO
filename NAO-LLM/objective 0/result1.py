@@ -47,7 +47,7 @@ def analyze_all_emotions(folder_path):
             except Exception as e:
                 print(f"An unexpected error occurred processing {filename}: {e}")
 
-    # Print results for each unique emotion
+    # Print results_virtual for each unique emotion
     for emotion in sorted(all_emotions):  # Sorted for consistent output
         print(f"Recognized emotions for '{emotion}':")
         if emotion in emotion_recognition_map:

@@ -42,7 +42,7 @@ public class SocketServer : MonoBehaviour
     private Quaternion interpolationStartRotation;
     private Quaternion interpolationTargetRotation;
     private float interpolationStartTime;
-    private float interpolationDuration = 0.3f; 
+    private float interpolationDuration = 0.5f; 
 
     void Start()
     {
@@ -138,7 +138,7 @@ public class SocketServer : MonoBehaviour
         }
     }
     
-    void MoveHeadTowards(float faceX, float faceY)
+    void MoveHeadTowards(float faceX, float faceY, float interpolationTime = 0.1f)
     {
         if (float.IsNaN(faceX) || float.IsNaN(faceY) || head == null) return;  
         
@@ -167,7 +167,7 @@ public class SocketServer : MonoBehaviour
         Quaternion targetRotation = Quaternion.Euler(0f, normalizedX * maxRotationAngle, normalizedY * maxRotationAngle);
 
         // Avvia l'interpolazione verso la nuova posizione
-        StartInterpolation(targetRotation, 0.1f);
+        StartInterpolation(targetRotation, interpolationTime);
     }
     
     void StartInterpolation(Quaternion targetRotation, float duration)
@@ -221,6 +221,7 @@ public class SocketServer : MonoBehaviour
         }
         else
         {
+            float timeLeft = 0f;
             switch (message)
             {
                 case "listening":
@@ -232,6 +233,7 @@ public class SocketServer : MonoBehaviour
                     Debug.Log("Comando Loading ricevuto!");
                     eyeLEDController.isRotating = true;
                     StartCoroutine(eyeLEDController.RotateEyes());
+                    StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/HeadYes.txt"));
                     break;
 
                 case "speaking":
@@ -244,7 +246,7 @@ public class SocketServer : MonoBehaviour
                     if(lastPose == "Stand")
                         break;
 
-                    float timeLeft = NaoMovements.IsPlayingTime();
+                    timeLeft = NaoMovements.IsPlayingTime();
                     
                     //Debug.Log("LastPose: " + lastPose);
                     /*if(lastPose == "Fear3" || lastPose == "Sadness3")
@@ -265,24 +267,28 @@ public class SocketServer : MonoBehaviour
                     }
                     else
                     {
-                        StartInterpolation(headInitialRotation, 0.3f);   // Interpola verso il centro
+                        StartInterpolation(headInitialRotation, 0.5f);   // Interpola verso il centro
                     }
                     break;
                 
                 case var mess when gesturesList.Contains(mess): // Controllo se message è in gesturesList
+                    
+                    isHeadTrackingActive = false;
+                    isHeadAnimating = true;
                     isInterpolating = false;
 
                     // 2. Salva la rotazione corrente della testa come punto di partenza per l'interpolazione
-                    if(head != null)
+                    if (head != null)
+                    {
                         interpolationStartRotation = head.localRotation;
+                        //StartInterpolation(headInitialRotation, 0.5f);
+                    }
 
-                    isHeadTrackingActive = false;
-                    isHeadAnimating = true;
-                    
-                    StartInterpolation(headInitialRotation, 0.5f);
-                    
                     //Debug.Log("Perform gesture: " + message);
-                    Invoke(nameof(PlayGesture), 0.5f);
+                    timeLeft = NaoMovements.IsPlayingTime();
+                    if(mess == "Stand")
+                        Invoke(nameof(GoToStand), timeLeft);
+                    Invoke(nameof(PlayGesture), timeLeft);
                     lastPose = message;
                     break;
 

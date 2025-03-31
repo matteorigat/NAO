@@ -79,15 +79,80 @@ public class NaoMovements : MonoBehaviour
                 startMotionKeys[jointName] = 0f;
             }
         }
-            
+        
         foreach (var jointName in motionKeys.Keys)
         {
-            motionKeys[jointName].Insert(0, startMotionKeys[jointName]);;
+            motionKeys[jointName].Insert(0, startMotionKeys[jointName]);
             motionTimes[jointName].Insert(0, 0f);
 
             startMotionKeys[jointName] = motionKeys[jointName].Last();
         }
     }
+    
+    /*
+    float NormalizeAngle(float angle)
+    {
+        angle = angle % 360;
+        if (angle > 180)
+            return angle - 360;
+        if (angle <= -180)
+            return angle + 360;
+        return angle;
+    }
+    
+    private float GetCurrentJointRotation(string jointName)
+    {
+        if (_jointMap.ContainsKey(jointName))
+        {
+            var joint = _jointMap[jointName];
+            Quaternion offsetRotation = Quaternion.identity;
+
+            if (_jointsOffset.ContainsKey(joint.jointTransform))
+            {
+                offsetRotation = _jointsOffset[joint.jointTransform];
+            }
+
+            // Applica l'offset alla rotazione locale
+            Quaternion totalRotation = joint.jointTransform.localRotation * Quaternion.Inverse(offsetRotation);
+            float angle = 0f;
+
+            if (joint.rotationAxis == Vector3.right) // Pitch (x)
+            {
+                angle = totalRotation.x;
+            }
+            else if (joint.rotationAxis == Vector3.up) // Yaw (y)
+            {
+                angle = -totalRotation.y; // Inversione
+            }
+            else if (joint.rotationAxis == Vector3.forward) // Roll (z)
+            {
+                if (jointName == "LElbowRoll" || jointName == "RElbowRoll")
+                {
+                    angle = -totalRotation.z; // Inversione specifica
+                }
+                else
+                {
+                    angle = totalRotation.z;
+                }
+            }
+            
+            return Mathf.Deg2Rad * NormalizeAngle(angle);
+        }
+        return 0f;
+    }
+    
+    
+    /*private void AddCurrentPositionToKeyframes(Dictionary<string, List<float>> motionKeys, Dictionary<string, List<float>> motionTimes)
+    {
+        
+        foreach (var jointName in motionKeys.Keys)
+        {
+            motionKeys[jointName].Insert(0, GetCurrentJointRotation(jointName));
+            motionTimes[jointName].Insert(0, 0f);
+
+            //startMotionKeys[jointName] = motionKeys[jointName].Last();
+        }
+    }*/
     
         
     public IEnumerator PlayMotion(String filePath, bool reverse = false)

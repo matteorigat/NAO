@@ -71,14 +71,14 @@ public class EyeLEDController : MonoBehaviour
         // Lista dei LED in ordine per simulare il movimento circolare
         Renderer[][] ledPairs = new Renderer[][]
         {
-            new Renderer[] { leftEyeLEDs[0], rightEyeLEDs[7] },
-            new Renderer[] { leftEyeLEDs[1], rightEyeLEDs[6] },
-            new Renderer[] { leftEyeLEDs[2], rightEyeLEDs[5] },
-            new Renderer[] { leftEyeLEDs[3], rightEyeLEDs[4] },
-            new Renderer[] { leftEyeLEDs[4], rightEyeLEDs[3] },
-            new Renderer[] { leftEyeLEDs[5], rightEyeLEDs[2] },
-            new Renderer[] { leftEyeLEDs[6], rightEyeLEDs[1] },
-            new Renderer[] { leftEyeLEDs[7], rightEyeLEDs[0] }
+            new Renderer[] { leftEyeLEDs[0], rightEyeLEDs[0] },
+            new Renderer[] { leftEyeLEDs[1], rightEyeLEDs[1] },
+            new Renderer[] { leftEyeLEDs[2], rightEyeLEDs[2] },
+            new Renderer[] { leftEyeLEDs[3], rightEyeLEDs[3] },
+            new Renderer[] { leftEyeLEDs[4], rightEyeLEDs[4] },
+            new Renderer[] { leftEyeLEDs[5], rightEyeLEDs[5] },
+            new Renderer[] { leftEyeLEDs[6], rightEyeLEDs[6] },
+            new Renderer[] { leftEyeLEDs[7], rightEyeLEDs[7] }
         };
         
         while (isRotating)
