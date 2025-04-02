@@ -1,0 +1,22 @@
+{
+    "id": 2,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "Ciao! Sono contento di sentirti così allegro. [happy] Spero che tu abbia una giornata fantastica! [rst]"
+        },
+        {
+            "role": "user",
+            "content": "Secondo me comunque l'"
+        },
+        {
+            "role": "system",
+            "content": "Sono d'accordo, l'indecisione può essere frustrante. [sad]"
+        }
+    ]
+}

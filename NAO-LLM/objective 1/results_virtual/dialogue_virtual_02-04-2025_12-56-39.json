@@ -1,0 +1,14 @@
+{
+    "id": 15,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Oh, è fantastico! [rst] Cosa ti rende così felice oggi?\n"
+        }
+    ]
+}

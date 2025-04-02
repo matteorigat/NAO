@@ -1,0 +1,30 @@
+{
+    "id": 6,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio triste"
+        },
+        {
+            "role": "system",
+            "content": "[sad] Oh, mi dispiace sentirlo. Cos'è successo? [rst] C'è qualcosa che posso fare per aiutarti?\n"
+        },
+        {
+            "role": "user",
+            "content": "ho trovato €5 per terra sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Che bella notizia! Sono felice per te! [rst] Come hai intenzione di spenderli?\n"
+        },
+        {
+            "role": "user",
+            "content": "Aiuto Mi stanno puntando una pistola alla testa"
+        },
+        {
+            "role": "system",
+            "content": "[fear] Oh no, questa è una situazione spaventosa. [rst] Chiama immediatamente la polizia e cerca un luogo sicuro dove nasconderti."
+        }
+    ]
+}

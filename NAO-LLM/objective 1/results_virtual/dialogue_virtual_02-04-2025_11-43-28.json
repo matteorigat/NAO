@@ -1,0 +1,22 @@
+{
+    "id": 0,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Sono felice di sentirtelo dire!"
+        },
+        {
+            "role": "user",
+            "content": "aspettiamo che torni a vincere questa partita Buon lavoro lavoro Grazie per avermi avvisata"
+        },
+        {
+            "role": "system",
+            "content": "Ciao! Ciao! Interessante. Allora ci vediamo tra poco. Vi aspettiamo che entri Alice e poi si va. Buon lavoro! Grazie per avermi invitata. Ciao! Ciao."
+        }
+    ]
+}

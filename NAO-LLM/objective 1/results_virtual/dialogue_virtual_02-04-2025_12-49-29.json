@@ -1,0 +1,22 @@
+{
+    "id": 12,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Che bello sentirtelo dire! Sono contento di vederti felice. [rst] C'è qualcosa di speciale che ha reso la tua giornata così positiva?\n"
+        },
+        {
+            "role": "user",
+            "content": "ok and Julio Chandler forno Plan"
+        },
+        {
+            "role": "system",
+            "content": "Scusa, non capisco. Puoi ripetere, per favore?\n"
+        }
+    ]
+}

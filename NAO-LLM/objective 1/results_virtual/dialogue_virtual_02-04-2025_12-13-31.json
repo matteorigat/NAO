@@ -1,0 +1,30 @@
+{
+    "id": 7,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ciao! Sono felice di sentirti così pieno di gioia."
+        },
+        {
+            "role": "user",
+            "content": "Che ne dici di andare a fare un bel giro al parco visto che c'è il sole"
+        },
+        {
+            "role": "system",
+            "content": "[rst] Che bella idea! Andare al parco con il sole sembra perfetto."
+        },
+        {
+            "role": "user",
+            "content": "oh no adesso ho tanta paura perché è venuto"
+        },
+        {
+            "role": "system",
+            "content": "[fear] Oh, no! Il temporale mi spaventa un po'. Forse dovremmo trovare un posto al chiuso."
+        }
+    ]
+}

@@ -1,0 +1,30 @@
+{
+    "id": 9,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Sono contento di sentirtelo dire! [rst] Cosa ti rende così felice?"
+        },
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "Capisco. [happy] È sempre bello essere felici."
+        },
+        {
+            "role": "user",
+            "content": "Vabbè ciao"
+        },
+        {
+            "role": "system",
+            "content": "Va bene, ciao! [rst] Spero di rivederti presto."
+        }
+    ]
+}

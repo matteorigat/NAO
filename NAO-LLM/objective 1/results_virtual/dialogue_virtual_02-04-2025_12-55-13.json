@@ -1,0 +1,34 @@
+{
+    "id": 14,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao Now Oggi sono estremamente felice"
+        },
+        {
+            "role": "system",
+            "content": "[Sad] Mi dispiace sentirlo. Posso fare qualcosa per aiutarti? [Rst]"
+        },
+        {
+            "role": "user",
+            "content": "No oggi sono estremamente felice"
+        },
+        {
+            "role": "system",
+            "content": "[Happy] Sono felicissimo di sentirlo! Cosa ti rende così felice? [Rst]"
+        },
+        {
+            "role": "user",
+            "content": "Ho appena trovato €5 per terra andiamo a prenderci un gelato"
+        },
+        {
+            "role": "system",
+            "content": "[Happy] Ottima idea! [Rst] Un gelato è sempre una buona idea."
+        },
+        {
+            "role": "user",
+            "content": "Oh no no adesso ho perso €5"
+        }
+    ]
+}

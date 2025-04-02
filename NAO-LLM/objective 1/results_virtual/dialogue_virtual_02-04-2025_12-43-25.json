@@ -1,0 +1,30 @@
+{
+    "id": 11,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ciao! [rst] Ottimo! Sono contento di sentirti così!\n"
+        },
+        {
+            "role": "user",
+            "content": "Oggi inau sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Davvero? Che bello! [rst] Cosa ti rende così felice?\n"
+        },
+        {
+            "role": "user",
+            "content": "Ho appena trovato €5 per terra che bello"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Wow! [rst] Che fortuna!"
+        }
+    ]
+}

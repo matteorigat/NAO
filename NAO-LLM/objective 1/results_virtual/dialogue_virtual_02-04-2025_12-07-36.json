@@ -1,0 +1,22 @@
+{
+    "id": 4,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao Now Oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ottimo! [rst] È fantastico sentirti così."
+        },
+        {
+            "role": "user",
+            "content": "Nomentano puntando una pistola"
+        },
+        {
+            "role": "system",
+            "content": "[fear] Oh no! [rst] È terribile!"
+        }
+    ]
+}

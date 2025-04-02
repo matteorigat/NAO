@@ -1,0 +1,30 @@
+{
+    "id": 5,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Anch'io! [rst] Cosa ti rende così felice?"
+        },
+        {
+            "role": "user",
+            "content": "Oggi ho proprio paura"
+        },
+        {
+            "role": "system",
+            "content": "[fear] Oh, mi dispiace. [rst] Di cosa hai paura?"
+        },
+        {
+            "role": "user",
+            "content": "quindi questo qua ci vuole No che ci vuole sono d'accordo però volevo vedere cosa accadeva quindi in quel codice Io metto al tempo all'inizio faccio un inserto quindi lo mette in posizione 0 in Excel Sì sì Time Zero"
+        },
+        {
+            "role": "system",
+            "content": "Sembra una discussione interessante. [rst] Di cosa state parlando?"
+        }
+    ]
+}

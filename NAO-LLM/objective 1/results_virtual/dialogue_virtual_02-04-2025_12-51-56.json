@@ -1,0 +1,46 @@
+{
+    "id": 13,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "Ciao! [happy] Sono contento di sentirtelo dire!"
+        },
+        {
+            "role": "user",
+            "content": "Che ne dici di andare a fare un giro al"
+        },
+        {
+            "role": "system",
+            "content": "[rst] Sarebbe un'ottima idea!"
+        },
+        {
+            "role": "user",
+            "content": "Ciao No oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "Ciao! [happy] Sono contento di sentirtelo dire!"
+        },
+        {
+            "role": "user",
+            "content": "Ciao Now Oggi sono estremamente felice perché ho trovato €5 per terra"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Fantastico!"
+        },
+        {
+            "role": "user",
+            "content": "Wow"
+        },
+        {
+            "role": "system",
+            "content": "[rst] Che cosa?"
+        }
+    ]
+}
