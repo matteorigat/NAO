@@ -121,11 +121,14 @@ public class NaoMovements : MonoBehaviour
             float yaw = deltaEulerAngles.y;
             float roll = deltaEulerAngles.z;
 
-            if (joint.jointName == "Shoulder.L" || joint.jointName == "Shoulder.R")
+            if (jointName.Contains("Shoulder"))
             {
-                pitch = deltaEulerAngles.z;
-                yaw = deltaEulerAngles.x;
-                roll = deltaEulerAngles.y;
+                deltaRotation = joint.jointTransform.localRotation * Quaternion.Inverse(offsetRotation);
+                deltaEulerAngles = deltaRotation.eulerAngles;
+                
+                pitch = deltaEulerAngles.x;
+                yaw = deltaEulerAngles.y;
+                roll = deltaEulerAngles.z;
             }
 
             if (joint.rotationAxis == Vector3.right) // Pitch (x)
@@ -156,6 +159,8 @@ public class NaoMovements : MonoBehaviour
         {
             motionKeys[jointName].Insert(0, GetCurrentJointRotation(jointName));
             motionTimes[jointName].Insert(0, 0f);
+            if(motionKeys[jointName][0] != 0f)
+                Debug.Log("First keyframe for joint " + jointName + ": " + motionKeys[jointName][0]);
         }
     }
     
@@ -349,7 +354,7 @@ public class NaoMovements : MonoBehaviour
     
     void Update()
     {
-        foreach (KeyCode key in new KeyCode[] { KeyCode.Q, KeyCode.A, KeyCode.Z, KeyCode.W, KeyCode.S, KeyCode.X, KeyCode.E, KeyCode.D, KeyCode.C, KeyCode.R, KeyCode.F, KeyCode.V })
+        foreach (KeyCode key in new KeyCode[] { KeyCode.Space, KeyCode.Q, KeyCode.A, KeyCode.Z, KeyCode.W, KeyCode.S, KeyCode.X, KeyCode.E, KeyCode.D, KeyCode.C, KeyCode.R, KeyCode.F, KeyCode.V })
         {
             if (Input.GetKeyDown(key))
             {
@@ -362,18 +367,19 @@ public class NaoMovements : MonoBehaviour
     {
         switch (key)
         {
-            case KeyCode.Q: return "Assets/Scripts/Gestures/Happiness1.txt";
-            case KeyCode.A: return "Assets/Scripts/Gestures/Happiness2.txt";
-            case KeyCode.Z: return "Assets/Scripts/Gestures/Happiness3.txt";
-            case KeyCode.W: return "Assets/Scripts/Gestures/Sadness1.txt";
-            case KeyCode.S: return "Assets/Scripts/Gestures/Sadness2.txt";
-            case KeyCode.X: return "Assets/Scripts/Gestures/Sadness3.txt";
-            case KeyCode.E: return "Assets/Scripts/Gestures/Anger1.txt";
-            case KeyCode.D: return "Assets/Scripts/Gestures/Anger2.txt";
-            case KeyCode.C: return "Assets/Scripts/Gestures/Anger3.txt";
-            case KeyCode.R: return "Assets/Scripts/Gestures/Fear1.txt";
-            case KeyCode.F: return "Assets/Scripts/Gestures/Fear2.txt";
-            case KeyCode.V: return "Assets/Scripts/Gestures/Fear3.txt";
+            case KeyCode.Space: return "Assets/Scripts/Gestures_new/GoToStand.txt";
+            case KeyCode.Q: return "Assets/Scripts/Gestures_new/Happiness1.txt";
+            case KeyCode.A: return "Assets/Scripts/Gestures_new/Happiness2.txt";
+            case KeyCode.Z: return "Assets/Scripts/Gestures_new/Happiness3.txt";
+            case KeyCode.W: return "Assets/Scripts/Gestures_new/Sadness1.txt";
+            case KeyCode.S: return "Assets/Scripts/Gestures_new/Sadness2.txt";
+            case KeyCode.X: return "Assets/Scripts/Gestures_new/Sadness3.txt";
+            case KeyCode.E: return "Assets/Scripts/Gestures_new/Anger1.txt";
+            case KeyCode.D: return "Assets/Scripts/Gestures_new/Anger2.txt";
+            case KeyCode.C: return "Assets/Scripts/Gestures_new/Anger3.txt";
+            case KeyCode.R: return "Assets/Scripts/Gestures_new/Fear1.txt";
+            case KeyCode.F: return "Assets/Scripts/Gestures_new/Fear2.txt";
+            case KeyCode.V: return "Assets/Scripts/Gestures_new/Fear3.txt";
             default: return string.Empty;
         }
     }
