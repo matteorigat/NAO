@@ -13,6 +13,8 @@ import json
 
 dialogue_path = "objective 1/results_virtual/dialogue_virtual_" + time.strftime("%d-%m-%Y_%H-%M-%S") + ".json"
 
+lastPose = "Stand"
+
 # Funzione per inviare messaggi al server
 def send_message(message):
     host = '127.0.0.1'  # Indirizzo IP del server (localhost per Unity)
@@ -22,7 +24,8 @@ def send_message(message):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
             s.sendall(message.encode('utf-8'))
-            #print(f"Messaggio inviato: {message}")
+            if(not ("face_position" in message)):
+                print(f"Messaggio inviato: {message}")
     except Exception as e:
         #print(f"Errore: {e}")
         pass
@@ -91,46 +94,54 @@ def face_tracking():
 #         self.engine = pyttsx3.init()  # Inizializza il motore
 #         self.engine.setProperty('rate', 160)  # Velocità della voce
 #         self.engine.setProperty('volume', 1)  # Volume massimo
-# 
+#
 #         # Imposta la voce italiana
 #         voices = self.engine.getProperty('voices')
 #         for voice in voices:
 #             if "Shelley (Italiano (Italia))" in voice.name:
 #                 self.engine.setProperty('voice', voice.id)
 #                 break
-# 
-# 
+#
 #     def speak(self, text):
 #         """Pronuncia il testo in italiano."""
 #         self.engine.say(text)  # Pronuncia il testo
 #         self.engine.runAndWait()  # Esegui la sintesi vocale
-# 
+#
 #
 # def speak_local_tts(tts, text):
+#     global lastPose
 #     segments = re.split(r'(\[.*?\])', text)
-# 
+#
 #     for segment in segments:
 #         # Prima di ogni segmento, invia il tag (se presente)
 #         if segment.startswith("[") and segment.endswith("]"):
-#             if segment[1:-1] == "rst":
+#             tag = segment[1:-1]
+#             if tag == "rst" and lastPose != "Stand":
 #                 send_message("Stand")
-#                 continue
-#             if segment[1:-1] == "happy":
+#                 lastPose = "Stand"
+#                 time.sleep(2)
+#             elif tag == "happy" and lastPose != "Happinesss1":
 #                 send_message("Happiness1")  # Invio del tag
-#             elif segment[1:-1] == "sad":
+#                 lastPose = "Happiness1"
+#             elif tag == "sad" and lastPose != "Sadness1":
 #                 send_message("Sadness1")
-#             elif segment[1:-1] == "fear":
+#                 lastPose = "Sadness1"
+#             elif tag == "fear" and lastPose != "Fear1":
 #                 send_message("Fear1")
-#             elif segment[1:-1] == "angry":
+#                 lastPose = "Fear1"
+#             elif tag == "angry" and lastPose != "Anger1":
 #                 send_message("Anger1")
-#             print("sent tag: " + segment[1:-1])
-# 
+#                 lastPose = "Anger1"
+#             #print("sent tag: " + segment[1:-1])
+#
 #         elif segment.strip():
 #             # Pronuncia il segmento
 #             print(f"Segmento: {segment}")
 #             tts.speak(segment)
-#             #send_message("Stand")
-#             time.sleep(0.5)  # Pausa per simulare il tempo di lettura dell'audio
+#
+#     if(lastPose != "Stand"):
+#         send_message("Stand")
+
 
 
 def load_dialogue(filename):
@@ -172,10 +183,9 @@ def listen_to_microphone(dialogue):
             start_time = time.time()
 
             with microphone as source:
-                recognizer.adjust_for_ambient_noise(source)
-                audio_data = recognizer.listen(source, phrase_time_limit=30, timeout=None)
-
                 try:
+                    #recognizer.adjust_for_ambient_noise(source)
+                    audio_data = recognizer.listen(source, phrase_time_limit=30, timeout=None)
                     text = recognizer.recognize_google(audio_data, language="it-IT")
                     print("testo audio riconosciuto: " + text)
                 except Exception as e:
@@ -205,24 +215,30 @@ def listen_to_microphone(dialogue):
 
 
 def speak_and_send_tags(text):
+    global lastPose
     segments = re.split(r'(\[.*?\])', text)
 
     for segment in segments:
         # Prima di ogni segmento, invia il tag (se presente)
         if segment.startswith("[") and segment.endswith("]"):
-            if segment[1:-1] == "rst":
+            tag = segment[1:-1]
+            if tag == "rst" and lastPose != "Stand":
                 send_message("Stand")
+                lastPose = "Stand"
                 time.sleep(2)
-                continue
-            if segment[1:-1] == "happy":
+            elif tag == "happy" and lastPose != "Happinesss1":
                 send_message("Happiness1")  # Invio del tag
-            elif segment[1:-1] == "sad":
+                lastPose = "Happiness1"
+            elif tag == "sad" and lastPose != "Sadness1":
                 send_message("Sadness1")
-            elif segment[1:-1] == "fear":
+                lastPose = "Sadness1"
+            elif tag == "fear" and lastPose != "Fear1":
                 send_message("Fear1")
-            elif segment[1:-1] == "angry":
+                lastPose = "Fear1"
+            elif tag == "angry" and lastPose != "Anger1":
                 send_message("Anger1")
-            #print("sent tag: " + segment[1:-1])
+                lastPose = "Anger1"
+            # print("sent tag: " + segment[1:-1])
 
         elif segment.strip():
             # Pronuncia il segmento
@@ -230,10 +246,11 @@ def speak_and_send_tags(text):
             response = serverLLM.say_to_file(segment.strip())
             if response:
                 playsound(response)
-            #send_message("Stand")
-            #time.sleep(0.5)  # Pausa per simulare il tempo di lettura dell'audio
 
-    send_message("Stand")
+    if (lastPose != "Stand"):
+        send_message("Stand")
+        time.sleep(2)
+
 
 
 def main():
@@ -245,6 +262,7 @@ def main():
     response = serverLLM.say_to_file("Ciao")
     if response:
         playsound(response)
+    #speak_local_tts(tts, "Ciao")
 
     while True:
         # Ascolta il microfono

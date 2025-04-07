@@ -3,7 +3,7 @@
 
 
 
-NAO-LLM/objective 0/results/*
-NAO-LLM/objective 1/results_real/*
-NAO-LLM/objective 1/results_virtual/*
+NAO-LLM/objective 0/results/
+NAO-LLM/objective 1/results_real/
+NAO-LLM/objective 1/results_virtual/
 NAO-LLM/tmp/

@@ -4,9 +4,9 @@ names = list()
 times = list()
 keys = list()
 
-names.append("HeadPitch")
-times.append([0.7, 1.2])
-keys.append([0.2, -0.161945])
+names.append("HeadYaw")
+times.append([0.5, 1])
+keys.append([0.2, 0.3])  
 
 
 def execute_gesture(IP, PORT, reverse=False):

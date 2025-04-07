@@ -68,27 +68,6 @@ public class NaoMovements : MonoBehaviour
         StartCoroutine(PlayMotion("Assets/Scripts/Gestures_new/GoToStand.txt"));
     }
     
-    /*private void AddCurrentPositionToKeyframes(Dictionary<string, List<float>> motionKeys, Dictionary<string, List<float>> motionTimes)
-    {
-        if (_isFirstMotion)
-        {
-            _isFirstMotion = false;
-            startMotionKeys = new Dictionary<string, float>();
-            foreach (var jointName in motionKeys.Keys)
-            {
-                startMotionKeys[jointName] = 0f;
-            }
-        }
-        
-        foreach (var jointName in motionKeys.Keys)
-        {
-            motionKeys[jointName].Insert(0, startMotionKeys[jointName]);
-            motionTimes[jointName].Insert(0, 0f);
-
-            startMotionKeys[jointName] = motionKeys[jointName].Last();
-        }
-    }*/
-    
     
     float NormalizeAngle(float angle)
     {
@@ -113,6 +92,8 @@ public class NaoMovements : MonoBehaviour
                 offsetRotation = _jointsOffset[joint.jointTransform];
             }
             
+            
+            //to use this code shoulder position should be recalculated in a different way
             Quaternion deltaRotation = joint.jointTransform.localRotation * Quaternion.Inverse(offsetRotation);
             Vector3 deltaEulerAngles = deltaRotation.eulerAngles;
             float angle = 0f;
@@ -120,16 +101,6 @@ public class NaoMovements : MonoBehaviour
             float pitch = deltaEulerAngles.x;
             float yaw = deltaEulerAngles.y;
             float roll = deltaEulerAngles.z;
-
-            if (jointName.Contains("Shoulder"))
-            {
-                deltaRotation = joint.jointTransform.localRotation * Quaternion.Inverse(offsetRotation);
-                deltaEulerAngles = deltaRotation.eulerAngles;
-                
-                pitch = deltaEulerAngles.x;
-                yaw = deltaEulerAngles.y;
-                roll = deltaEulerAngles.z;
-            }
 
             if (joint.rotationAxis == Vector3.right) // Pitch (x)
             {
@@ -141,10 +112,10 @@ public class NaoMovements : MonoBehaviour
             }
             else if (joint.rotationAxis == Vector3.forward) // Roll (z)
             {
-                if (jointName == "LElbowRoll" || jointName == "RElbowRoll")
-                    angle = -NormalizeAngle(roll);
-                else
-                    angle = NormalizeAngle(roll);
+                //if (jointName == "LElbowRoll" || jointName == "RElbowRoll")
+                //    angle = -NormalizeAngle(roll);
+                //else
+                angle = NormalizeAngle(roll);
             }
             
             return Mathf.Deg2Rad * angle;
@@ -152,15 +123,27 @@ public class NaoMovements : MonoBehaviour
         return 0f;
     }
     
-    
     private void AddCurrentPositionToKeyframes(Dictionary<string, List<float>> motionKeys, Dictionary<string, List<float>> motionTimes)
     {
+        if (_isFirstMotion)
+        {
+            _isFirstMotion = false;
+            startMotionKeys = new Dictionary<string, float>();
+            foreach (var jointName in motionKeys.Keys)
+            {
+                startMotionKeys[jointName] = 0f;
+            }
+        }
+        
         foreach (var jointName in motionKeys.Keys)
         {
-            motionKeys[jointName].Insert(0, GetCurrentJointRotation(jointName));
+            if(jointName.Contains("Head"))
+                motionKeys[jointName].Insert(0, GetCurrentJointRotation(jointName));
+            else 
+                motionKeys[jointName].Insert(0, startMotionKeys[jointName]);
             motionTimes[jointName].Insert(0, 0f);
-            if(motionKeys[jointName][0] != 0f)
-                Debug.Log("First keyframe for joint " + jointName + ": " + motionKeys[jointName][0]);
+
+            startMotionKeys[jointName] = motionKeys[jointName].Last();
         }
     }
     
@@ -354,7 +337,7 @@ public class NaoMovements : MonoBehaviour
     
     void Update()
     {
-        foreach (KeyCode key in new KeyCode[] { KeyCode.Space, KeyCode.Q, KeyCode.A, KeyCode.Z, KeyCode.W, KeyCode.S, KeyCode.X, KeyCode.E, KeyCode.D, KeyCode.C, KeyCode.R, KeyCode.F, KeyCode.V })
+        foreach (KeyCode key in new KeyCode[] { KeyCode.Space, KeyCode.N, KeyCode.Y, KeyCode.Q, KeyCode.A, KeyCode.Z, KeyCode.W, KeyCode.S, KeyCode.X, KeyCode.E, KeyCode.D, KeyCode.C, KeyCode.R, KeyCode.F, KeyCode.V })
         {
             if (Input.GetKeyDown(key))
             {
@@ -368,6 +351,8 @@ public class NaoMovements : MonoBehaviour
         switch (key)
         {
             case KeyCode.Space: return "Assets/Scripts/Gestures_new/GoToStand.txt";
+            case KeyCode.Y: return "Assets/Scripts/Gestures_new/HeadYes.txt";
+            case KeyCode.N: return "Assets/Scripts/Gestures_new/HeadNo.txt";
             case KeyCode.Q: return "Assets/Scripts/Gestures_new/Happiness1.txt";
             case KeyCode.A: return "Assets/Scripts/Gestures_new/Happiness2.txt";
             case KeyCode.Z: return "Assets/Scripts/Gestures_new/Happiness3.txt";

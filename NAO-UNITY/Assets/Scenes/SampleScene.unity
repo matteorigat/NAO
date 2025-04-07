@@ -622,6 +622,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: naozero
       objectReference: {fileID: 0}
+    - target: {fileID: 7172391995128959928, guid: 12092e7b8751347d6ba0821fe91c239c, type: 3}
+      propertyPath: ledOffColor.b
+      value: 0.8862745
+      objectReference: {fileID: 0}
+    - target: {fileID: 7172391995128959928, guid: 12092e7b8751347d6ba0821fe91c239c, type: 3}
+      propertyPath: ledOffColor.g
+      value: 0.8862745
+      objectReference: {fileID: 0}
+    - target: {fileID: 7172391995128959928, guid: 12092e7b8751347d6ba0821fe91c239c, type: 3}
+      propertyPath: ledOffColor.r
+      value: 0.8862745
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

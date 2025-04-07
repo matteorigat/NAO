@@ -132,10 +132,10 @@ public class SocketServer : MonoBehaviour
                 MoveHeadTowards(faceX, faceY); // O muovi verso il volto
             }
         }
-        else if (!isHeadTrackingActive && isInterpolating) // Interpolazione verso la posizione iniziale
-        {
-            InterpolateHead();
-        }
+        //else if (!isHeadTrackingActive && isInterpolating) // Interpolazione verso la posizione iniziale
+        //{
+        //    InterpolateHead();
+        //}
     }
     
     void MoveHeadTowards(float faceX, float faceY, float interpolationTime = 0.1f)
@@ -146,23 +146,7 @@ public class SocketServer : MonoBehaviour
         float normalizedX = -Mathf.Clamp((faceX / 1280f) * 2f - 1f , -1f, 1f); // Adatta la risoluzione della videocamera
         float normalizedY = Mathf.Clamp((faceY / 720f) * 2f - 1.3f , -1f, 1f);
 
-        // Trova il nodo della testa
-        /*Transform head = robotPrefab.transform.Find("Armature/Torso/Head");
-
-        if (head != null)
-        {
-            // Calcola la nuova rotazione senza interpolazione
-            float maxRotationAngle = 20f; // Angolo massimo di rotazione
-            Quaternion targetRotation = Quaternion.Euler(0f, normalizedX * maxRotationAngle, normalizedY * maxRotationAngle);
-
-            // Applica direttamente la rotazione senza interpolazione
-            head.localRotation = targetRotation;
-        }
-        else
-        {
-            Debug.LogWarning("Nodo mixamorig:Head non trovato nella gerarchia del robot.");
-        }*/
-
+        
         float maxRotationAngle = 20f;
         Quaternion targetRotation = Quaternion.Euler(0f, normalizedX * maxRotationAngle, normalizedY * maxRotationAngle);
 
@@ -247,15 +231,6 @@ public class SocketServer : MonoBehaviour
                         break;
 
                     timeLeft = NaoMovements.IsPlayingTime();
-                    
-                    //Debug.Log("LastPose: " + lastPose);
-                    /*if(lastPose == "Fear3" || lastPose == "Sadness3")
-                        Invoke(nameof(PlayGestureReverse), timeLeft);
-                    else
-                        Invoke(nameof(PlayGestureReverse2), timeLeft);
-                        */
-                    //Debug.Log("Performed stand: "+ message);
-                    
                     Invoke(nameof(GoToStand), timeLeft);
                     
                     isHeadTrackingActive = true;
@@ -269,26 +244,20 @@ public class SocketServer : MonoBehaviour
                     {
                         StartInterpolation(headInitialRotation, 0.5f);   // Interpola verso il centro
                     }
+                    
+                    lastPose = "Stand";
                     break;
                 
-                case var mess when gesturesList.Contains(mess): // Controllo se message è in gesturesList
+                case var mess when gesturesList.Contains(mess):
                     
                     isHeadTrackingActive = false;
-                    isHeadAnimating = true;
                     isInterpolating = false;
-
-                    // 2. Salva la rotazione corrente della testa come punto di partenza per l'interpolazione
-                    if (head != null)
-                    {
-                        interpolationStartRotation = head.localRotation;
-                        //StartInterpolation(headInitialRotation, 0.5f);
-                    }
-
+                    isHeadAnimating = true;
+                    
                     //Debug.Log("Perform gesture: " + message);
                     timeLeft = NaoMovements.IsPlayingTime();
-                    if(mess == "Stand")
-                        Invoke(nameof(GoToStand), timeLeft);
-                    Invoke(nameof(PlayGesture), timeLeft);
+                    
+                    StartCoroutine(DelayedPlayGesture(mess, timeLeft));
                     lastPose = message;
                     break;
 
@@ -299,12 +268,17 @@ public class SocketServer : MonoBehaviour
         }
     }
     
-    void PlayGesture()
+    private IEnumerator<YieldInstruction> DelayedPlayGesture(string gestureName, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        PlayGesture(gestureName);
+    }
+    
+    void PlayGesture(string gestureName)
     {
         if (NaoMovements != null)
         {
-            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/" + lastPose + ".txt"));
-
+            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/" + gestureName + ".txt"));
         }
     }
     
@@ -314,25 +288,6 @@ public class SocketServer : MonoBehaviour
         {
             StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures_new/GoToSTand.txt"));
             lastPose = "Stand";
-        }
-    }
-    
-    void PlayGestureReverse()
-    {
-        if (NaoMovements != null)
-        {
-            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/" + lastPose + "reverse.txt"));
-            lastPose = "Stand";
-        }
-    }
-    
-    void PlayGestureReverse2()
-    {
-        if (NaoMovements != null)
-        {
-            StartCoroutine(NaoMovements.PlayMotion("Assets/Scripts/Gestures/"+ lastPose +".txt", true));
-            lastPose = "Stand";
-
         }
     }
 

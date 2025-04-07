@@ -70,8 +70,8 @@ def say():
     global tracking_event, track_thread, lastPose
 
     rotate_event.clear()
-    leds.off("FaceLeds")
-    leds.fadeRGB("FaceLeds", 0xffffff, 0.5)
+    time.sleep(0.1)
+    leds.fadeRGB("FaceLeds", 0xffffff, 0.8)
 
     data = request.json
     message = data.get('message')
@@ -105,9 +105,6 @@ def say():
                 message_utf8 = segment.encode('utf-8')
                 print ("Sending message to NAO: ", message_utf8)
                 tts.say(message_utf8)
-
-
-
 
 
         if(lastPose != "Stand"):
@@ -228,7 +225,7 @@ class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio
 @app.route("/start_listening", methods=["POST"])
 def start_listening():
     # print("Received a request to start listening, current length of server buffer:", len(AudioCapture.buffers))
-    leds.off("FaceLeds")
+    rotate_event.clear()
     leds.fadeRGB("FaceLeds", 0x42ff42, 0.5)
     AudioCapture.start_listening()
     return jsonify(success=True)
@@ -292,7 +289,6 @@ def rotate_eyes():
     led_on_duration = 0.1
 
     active_leds = []
-    leds.off("FaceLeds")
     firstRun = True
 
     while rotate_event.is_set():
@@ -316,10 +312,9 @@ def rotate_eyes():
                 leds.setIntensity("previousLeds", 0.0)
 
             if not rotate_event.is_set():
-                leds.off("FaceLeds")
+                #leds.off("FaceLeds")
                 break
 
-    leds.off("FaceLeds")
 
 
 def trackFace():
@@ -329,7 +324,7 @@ def trackFace():
     targetName = "Face"
     faceWidth = 0.6
     trackerProxy.registerTarget(targetName, faceWidth)
-
+    time.sleep(1)
     trackerProxy.track(targetName)
     try:
         while tracking_event.is_set():
@@ -379,12 +374,12 @@ if __name__ == '__main__':
         postureProxy.goToPosture("Stand", 0.5)  # Assume la posizione in piedi
         lastPose = "Stand"
 
+        touch_head_thread = threading.Thread(target=on_touch_head)
+        touch_head_thread.start()
+
         tracking_event.set()
         track_thread = threading.Thread(target=trackFace)
         track_thread.start()
-
-        touch_head_thread = threading.Thread(target=on_touch_head)
-        touch_head_thread.start()
 
 
     try:

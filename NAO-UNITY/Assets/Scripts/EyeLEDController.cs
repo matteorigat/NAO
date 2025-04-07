@@ -8,18 +8,30 @@ public class EyeLEDController : MonoBehaviour
     public Renderer[] rightEyeLEDs;
 
     // Colori per i LED accesi e spenti
-    public Color ListeningColorEmission = Color.green;
-    public Color ListeningColor = new Color(0.639f, 1f, 0.659f);
-    public Color ledOffColor = Color.white;  // Colore quando il LED è spento
-    public Color RotationColorEmission = Color.blue;
-    public Color RotationColor = new Color(0.529f, 0.808f, 0.922f);
-    public Color SpeakingColorEmission = Color.white;
-    public Color SpeakingColor = Color.white;
+    private  Color ListeningColorEmission = Color.green;
+    private  Color ListeningColor = new Color(0.639f, 1f, 0.659f);
+    private  Color RotationColorEmission = Color.blue;
+    private  Color RotationColor = new Color(0.529f, 0.808f, 0.922f);
+    private  Color SpeakingColorEmission = Color.white;
+    private  Color SpeakingColor = Color.white;
+    private Color ledOffColor;
+    private Color ledOffColorEmission; 
 
     // Durata del singolo passo dell'animazione
-    public float ledOnDuration = 0.1f;
+    private float ledOnDuration = 0.1f;
     public volatile bool isRotating = false;
     
+    
+    void Start()
+    {
+        // Store initial LED states
+        foreach (Renderer led in leftEyeLEDs)
+        {
+            ledOffColor = led.material.GetColor("_Color");
+            ledOffColorEmission = led.material.GetColor("_EmissionColor");
+            break;
+        }
+    }
     // Funzione per accendere tutti i LED di un occhio
     public void ListeningLEDs()
     {
@@ -55,14 +67,14 @@ public class EyeLEDController : MonoBehaviour
     {
         foreach (var led in leftEyeLEDs)
         {
-            led.material.SetColor("_EmissionColor", ledOffColor);
-            led.material.SetColor("_Color", Color.white);
+            led.material.SetColor("_EmissionColor", ledOffColorEmission);
+            led.material.SetColor("_Color", ledOffColor);
         }
         
         foreach (var led in rightEyeLEDs)
         {
-            led.material.SetColor("_EmissionColor", ledOffColor);
-            led.material.SetColor("_Color", Color.white);
+            led.material.SetColor("_EmissionColor", ledOffColorEmission);
+            led.material.SetColor("_Color", ledOffColor);
         }
     }
     
@@ -104,7 +116,7 @@ public class EyeLEDController : MonoBehaviour
                 // Aspetta per la durata del passo
                 yield return new WaitForSeconds(ledOnDuration);
             }
-        }
+        } 
         
         TurnOffAllLEDs();
     }
@@ -114,6 +126,7 @@ public class EyeLEDController : MonoBehaviour
         
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
+            isRotating = false;
             ListeningLEDs();
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
@@ -122,6 +135,11 @@ public class EyeLEDController : MonoBehaviour
             StartCoroutine(RotateEyes());
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            isRotating = false;
+            SpeakingLEDs();
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4))
         {
             isRotating = false;
             TurnOffAllLEDs();
