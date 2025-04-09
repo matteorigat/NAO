@@ -89,8 +89,6 @@ def index():
         else:
             welcome_int = 0
 
-    #welcome_int = 1
-
     global gestures_list
     gestures_list = [[], []]
 
@@ -122,6 +120,7 @@ def index():
         else:
             gestures_list[1].append(remaining_gestures_flat.pop())
 
+    # 0 virtuale, 1 reale
     random.shuffle(gestures_list[0])
     random.shuffle(gestures_list[1])
 

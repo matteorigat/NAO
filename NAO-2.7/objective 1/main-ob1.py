@@ -2,6 +2,7 @@ import re
 import time
 import threading
 import requests
+import random
 from flask import Flask, request, jsonify
 from naoqi import ALProxy, ALModule, ALBroker
 
@@ -44,6 +45,96 @@ GESTURE_MAP = {
 
 lastPose = "Stand"
 
+tag_pose_map = {
+    "happy": ["Happiness1", "Happiness3"],
+    "sad": ["Sadness1", "Sadness3"],
+    "angry": ["Anger1", "Anger2"],
+    "fear": ["Fear1", "Fear2"],
+    "rst": ["Stand"]
+}
+
+@app.route('/say', methods=['POST'])
+def say():
+    global tracking_event, track_thread, lastPose
+
+    rotate_event.clear()
+    time.sleep(0.1)
+    leds.fadeRGB("FaceLeds", 0xffffff, 0.8)
+
+    data = request.get_json()
+    message = data.get('message')
+
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    segments = re.split(r'(\[.*?\])', message)
+
+    try:
+        for segment in segments:
+            segment = segment.strip()
+            if not segment:
+                continue
+
+            if segment.startswith("[") and segment.endswith("]"):
+                tag = segment[1:-1]
+                handle_tag(tag)
+            else:
+                message_utf8 = segment.encode('utf-8')
+                print("Sending message to NAO:", message_utf8)
+                tts.say(message_utf8)
+
+        if lastPose != "Stand":
+            postureProxy.goToPosture("Stand", 0.4)
+            lastPose = "Stand"
+
+        if not tracking_event.is_set():
+            tracking_event.set()
+            track_thread = threading.Thread(target=trackFace)
+            track_thread.start()
+
+        return jsonify({"status": "Message sent to NAO"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def handle_tag(tag):
+    """Handle gestures using tag_pose_map."""
+    poses = tag_pose_map.get(tag)
+    if not poses:
+        print("Unknown tag:", tag)
+        return
+
+    pose = random.choice(poses) if len(poses) > 1 else poses[0]
+    gesture(pose)
+
+
+def gesture(message):
+    global lastPose, tracking_event, track_thread
+
+    if not message or message == lastPose:
+        return
+
+    if message == "Stand":
+        postureProxy.goToPosture("Stand", 0.4)
+        lastPose = "Stand"
+
+        if not tracking_event.is_set():
+            tracking_event.set()
+            track_thread = threading.Thread(target=trackFace)
+            track_thread.start()
+        return
+
+    if tracking_event.is_set():
+        tracking_event.clear()
+
+    gesture_class = GESTURE_MAP.get(message)
+    if gesture_class:
+        lastPose = message
+        gesture_class.execute_gesture(NAO_IP, NAO_PORT)
+    else:
+        print("Invalid gesture:", message)
+
 
 @app.route('/say_to_file', methods=['POST'])
 def say_to_file():
@@ -63,126 +154,6 @@ def say_to_file():
         return jsonify({"status": "Message sent to NAO"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route('/say', methods=['POST'])
-def say():
-    global tracking_event, track_thread, lastPose
-
-    rotate_event.clear()
-    time.sleep(0.1)
-    leds.fadeRGB("FaceLeds", 0xffffff, 0.8)
-
-    data = request.json
-    message = data.get('message')
-
-    if not message:
-        return jsonify({"error": "No message provided"}), 400
-
-    #configuration = {"bodyLanguageMode": "random"}
-
-    segments = re.split(r'(\[.*?\])', message)
-
-    try:
-        for segment in segments:
-            # Prima di ogni segmento, invia il tag (se presente)
-            if segment.startswith("[") and segment.endswith("]"):
-                if segment[1:-1] == "rst":
-                    gesture("Stand")
-                elif segment[1:-1] == "happy":
-                    gesture("Happiness1")  # Invio del tag
-                elif segment[1:-1] == "sad":
-                    gesture("Sadness1")
-                elif segment[1:-1] == "fear":
-                    gesture("Fear1")
-                elif segment[1:-1] == "angry":
-                    gesture("Anger1")
-                print("sent tag: " + segment[1:-1])
-
-            elif segment.strip():
-                # Pronuncia il segmento
-                #tts.stopAll()
-                message_utf8 = segment.encode('utf-8')
-                print ("Sending message to NAO: ", message_utf8)
-                tts.say(message_utf8)
-
-
-        if(lastPose != "Stand"):
-            postureProxy.goToPosture("Stand", 0.4)
-            lastPose = "Stand"
-
-        if not tracking_event.is_set():
-            tracking_event.set()
-            track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
-            track_thread.start()
-
-        return jsonify({"status": "Message sent to NAO"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-def gesture(message):
-    global lastPose
-
-    if not message:
-        return
-
-    if (message == "Stand" and lastPose == "Stand"):
-        return
-
-    if message == "start":
-        postureProxy.goToPosture("Stand", 0.5)
-        lastPose = "Stand"
-        return
-
-    if (message == "Stand" and lastPose != "Stand"):
-        postureProxy.goToPosture("Stand", 0.4)
-        lastPose = "Stand"
-        if not tracking_event.is_set():
-            tracking_event.set()
-            track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
-            track_thread.start()
-        return
-
-    global tracking_event, track_thread
-    if tracking_event.is_set():
-        tracking_event.clear()  # Signal the tracking thread to stop
-
-
-    # Controlla se il messaggio corrisponde a un gesto valido
-    gesture_class = GESTURE_MAP.get(message)
-    if not gesture_class:
-        return
-
-    lastPose = message
-
-    gesture_class.execute_gesture(NAO_IP, NAO_PORT)
-
-# def goToStand():
-#     global lastPose
-#     standardReverse = True
-# 
-#     if (lastPose == "Sadness3" or lastPose == "Fear3"):
-#         lastPose += "reverse"
-#         standardReverse = False
-# 
-#     gesture_class = GESTURE_MAP.get(lastPose)
-#     if not gesture_class:
-#         return
-# 
-#     try:
-#         gesture_class.execute_gesture(NAO_IP, NAO_PORT, reverse=standardReverse)
-#     except Exception as e:
-#         postureProxy.goToPosture("Stand", 0.5)
-# 
-#     if not tracking_event.is_set():
-#         tracking_event.set()
-#         track_thread = threading.Thread(target=trackFace)  # Create a *new* thread
-#         track_thread.start()
-# 
-#     # posture.goToPosture("Stand", 0.5)
-#     lastPose = "Stand"
-
 
 
 class AudioCaptureModule(ALModule):  # NAOqi module for capturing audio

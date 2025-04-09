@@ -29,6 +29,8 @@ def analyze_and_plot_emotions(folder_path):
                     if not isinstance(user_id, str) or user_id == "id":
                         continue
                     for interaction in interactions:
+                        if interaction['interaction'] == "virtual":
+                            continue
                         try:
                             emotion_expressed = interaction['emotion']
                             valence = float(interaction['valence'])

@@ -27,8 +27,8 @@ def analyze_emotion_recognition(folder_path):
                     if not isinstance(user_id, str) or user_id == "id":
                         continue
                     for interaction in interactions:
-                        if interaction['interaction'] == "real": # Shorter
-                            continue
+                        # if interaction['interaction'] == "virtual":
+                        #     continue
                         try:
                             emotion_expressed = interaction['emotion']
                             emotion_recognized = interaction['emotion-recognized']

@@ -13,7 +13,8 @@ def load_json_from_folder(folder_path):
             file_path = os.path.join(folder_path, filename)
             with open(file_path, 'r') as f:
                 try:
-                    data.append(json.load(f))
+                    file_data = json.load(f)
+                    data.append(file_data)
                 except json.JSONDecodeError as e:
                     print(f"Errore nel leggere il file {filename}: {e}")
     return data
@@ -30,21 +31,27 @@ emotion_map = {
 def process_emotion_data(files_data):
     all_data = []
     for file_data in files_data:
-        for key in file_data.keys():
-            if key != "id":  # Ignoriamo la chiave "id"
-                # Estrazione dei dati dalla chiave
-                emotion_data = file_data[key]
+        for key, interactions in file_data.items():
+            if key == "id":  # Ignoriamo la chiave "id"
+                continue
 
-                for item in emotion_data:
-                    # Mappiamo le emozioni di base
-                    emotion = item['emotion']
-                    recognized_emotion = item['emotion-recognized']
+            # Assuming interactions is a list of interaction dictionaries
+            if isinstance(interactions, list):  # Add this check
+                for interaction in interactions:
+                    if interaction.get('interaction') == "real":
+                        continue
+                    # Estrazione dei dati dalla chiave
+                    emotion = interaction.get('emotion')  # Use get() to avoid KeyError
+                    recognized_emotion = interaction.get('emotion-recognized')  # Use get() to avoid KeyError
+
+                    # Skip if either emotion or recognized_emotion is missing
+                    if not emotion or not recognized_emotion:
+                        continue
 
                     emotion = emotion_map[emotion.split('1')[0].split('2')[0].split('3')[0]]  # puliamo la parte numerica
 
                     # Aggiungiamo i dati mappati
                     all_data.append([emotion, recognized_emotion])
-
     return pd.DataFrame(all_data, columns=['emotion', 'emotion-recognized'])
 
 # Caricare i dati dalla cartella

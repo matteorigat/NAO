@@ -1,3 +1,4 @@
+import random
 import socket
 import re
 import os
@@ -216,39 +217,42 @@ def listen_to_microphone(dialogue):
 
 def speak_and_send_tags(text):
     global lastPose
+
+    tag_pose_map = {
+        "happy": ["Happiness1", "Happiness3"],
+        "sad": ["Sadness1", "Sadness3"],
+        "angry": ["Anger1", "Anger2"],
+        "fear": ["Fear1", "Fear2"],
+        "rst": ["Stand"]
+    }
+
     segments = re.split(r'(\[.*?\])', text)
 
     for segment in segments:
-        # Prima di ogni segmento, invia il tag (se presente)
+        segment = segment.strip()
+        if not segment:
+            continue
+
         if segment.startswith("[") and segment.endswith("]"):
             tag = segment[1:-1]
-            if tag == "rst" and lastPose != "Stand":
-                send_message("Stand")
-                lastPose = "Stand"
-                time.sleep(2)
-            elif tag == "happy" and lastPose != "Happinesss1":
-                send_message("Happiness1")  # Invio del tag
-                lastPose = "Happiness1"
-            elif tag == "sad" and lastPose != "Sadness1":
-                send_message("Sadness1")
-                lastPose = "Sadness1"
-            elif tag == "fear" and lastPose != "Fear1":
-                send_message("Fear1")
-                lastPose = "Fear1"
-            elif tag == "angry" and lastPose != "Anger1":
-                send_message("Anger1")
-                lastPose = "Anger1"
-            # print("sent tag: " + segment[1:-1])
 
-        elif segment.strip():
-            # Pronuncia il segmento
-            #print(f"Segmento: {segment}")
-            response = serverLLM.say_to_file(segment.strip())
+            if tag in tag_pose_map:
+                poses = tag_pose_map[tag]
+                pose = poses[0] if len(poses) == 1 else random.choice(poses)
+
+                if lastPose != pose:
+                    send_message(pose)
+                    lastPose = pose
+                    if tag == "rst":
+                        time.sleep(2)
+        else:
+            response = serverLLM.say_to_file(segment)
             if response:
                 playsound(response)
 
-    if (lastPose != "Stand"):
+    if lastPose != "Stand":
         send_message("Stand")
+        lastPose = "Stand"
         time.sleep(2)
 
 

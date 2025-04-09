@@ -2,15 +2,14 @@
 import os
 import re
 import subprocess
-
-#import cv2
-import google.generativeai as genai
-import numpy as np
-import requests
-import speech_recognition as sr
 import time
 import threading
 import paramiko
+import numpy as np
+import requests
+#import cv2
+import speech_recognition as sr
+import google.generativeai as genai
 
 
 # Configura l'API key di Gemini
@@ -23,6 +22,7 @@ generation_config = {
     "max_output_tokens": 8192,
     "response_mime_type": "text/plain",
 }
+
 
 model = genai.GenerativeModel(
   model_name="gemini-2.0-flash-exp",
