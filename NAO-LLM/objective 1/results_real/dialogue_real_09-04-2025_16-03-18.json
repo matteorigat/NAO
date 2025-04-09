@@ -1,0 +1,18 @@
+{
+    "id": 0,
+    "interaction": "real",
+    "history": [
+        {
+            "role": "system",
+            "content": "Ciao"
+        },
+        {
+            "role": "user",
+            "content": "Ciao No come stai oggi"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ciao! Sto bene, grazie per avermelo chiesto! [rst] Come stai tu?\n"
+        }
+    ]
+}

@@ -89,38 +89,45 @@ def index():
     #     else:
     #         welcome_int = 0
 
-    welcome_int = 1
+    welcome_int = 0
 
     global gestures_list
     gestures_list = [[], []]
 
+    gestures_list = [
+        # Virtual list (index 0)
+        ['Anger3', 'Sadness2', 'Happiness1', 'Fear2', 'Fear1', 'Happiness2'],
+        # Real list (index 1)
+        ['Anger1', 'Happiness3', 'Fear3', 'Anger2', 'Sadness3', 'Sadness1']
+    ]
 
-    # Crea una copia della lista di gesture per non modificarla mentre selezioni
-    remaining_gestures = {emotion: gestures.copy() for emotion, gestures in gestures_dict.items()}
 
-    # Aggiungi almeno una gesture per emozione a ciascuna lista
-    for emotion, gestures in remaining_gestures.items():
-        if len(gestures) > 1:  # Verifica che ci siano abbastanza gesture
-            # Seleziona due gesture e rimuovile dalla lista
-            chosen_gesture1 = random.choice(gestures)
-            gestures.remove(chosen_gesture1)
-            chosen_gesture2 = random.choice(gestures)
-            gestures.remove(chosen_gesture2)
-
-            gestures_list[0].append(chosen_gesture1)
-            gestures_list[1].append(chosen_gesture2)
-
-    # Mescola le gesture rimanenti da distribuire tra le due liste
-    remaining_gestures_flat = [gesture for gestures_list in remaining_gestures.values() for gesture in
-                               gestures_list]
-    random.shuffle(remaining_gestures_flat)
-
-    # Distribuisci le gesture rimanenti nelle due liste in modo bilanciato
-    while remaining_gestures_flat:
-        if len(gestures_list[0]) <= len(gestures_list[1]):
-            gestures_list[0].append(remaining_gestures_flat.pop())
-        else:
-            gestures_list[1].append(remaining_gestures_flat.pop())
+    # # Crea una copia della lista di gesture per non modificarla mentre selezioni
+    # remaining_gestures = {emotion: gestures.copy() for emotion, gestures in gestures_dict.items()}
+    #
+    # # Aggiungi almeno una gesture per emozione a ciascuna lista
+    # for emotion, gestures in remaining_gestures.items():
+    #     if len(gestures) > 1:  # Verifica che ci siano abbastanza gesture
+    #         # Seleziona due gesture e rimuovile dalla lista
+    #         chosen_gesture1 = random.choice(gestures)
+    #         gestures.remove(chosen_gesture1)
+    #         chosen_gesture2 = random.choice(gestures)
+    #         gestures.remove(chosen_gesture2)
+    #
+    #         gestures_list[0].append(chosen_gesture1)
+    #         gestures_list[1].append(chosen_gesture2)
+    #
+    # # Mescola le gesture rimanenti da distribuire tra le due liste
+    # remaining_gestures_flat = [gesture for gestures_list in remaining_gestures.values() for gesture in
+    #                            gestures_list]
+    # random.shuffle(remaining_gestures_flat)
+    #
+    # # Distribuisci le gesture rimanenti nelle due liste in modo bilanciato
+    # while remaining_gestures_flat:
+    #     if len(gestures_list[0]) <= len(gestures_list[1]):
+    #         gestures_list[0].append(remaining_gestures_flat.pop())
+    #     else:
+    #         gestures_list[1].append(remaining_gestures_flat.pop())
 
     random.shuffle(gestures_list[0])
     random.shuffle(gestures_list[1])

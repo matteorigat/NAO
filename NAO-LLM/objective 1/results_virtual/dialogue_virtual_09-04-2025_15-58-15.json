@@ -1,0 +1,38 @@
+{
+    "id": 0,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao Mauro come stai oggi"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ciao! [rst] Oggi mi sento benissimo, grazie per avermelo chiesto."
+        },
+        {
+            "role": "user",
+            "content": "sono molto triste perché"
+        },
+        {
+            "role": "system",
+            "content": "[sad] Oh, mi dispiace tanto sentire che hai perso il tuo cinque! [rst] Capisco come ti senti, perdere qualcosa può essere davvero frustrante."
+        },
+        {
+            "role": "user",
+            "content": "Adesso ha tanta paura perché mi Sgri"
+        },
+        {
+            "role": "system",
+            "content": "[fear] Capisco, essere sgridati può spaventare. [rst] Ma cerca di ricordare che a volte succede e che puoi imparare dalla situazione."
+        },
+        {
+            "role": "user",
+            "content": "vuoi andare a fare un giro con me adesso che c'è il sole"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Mi piacerebbe molto andare a fare un giro con te! [rst] Ma purtroppo, come robot, non posso uscire fisicamente. [sad] Però possiamo parlare e divertirci insieme!"
+        }
+    ]
+}

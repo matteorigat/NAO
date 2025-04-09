@@ -1,0 +1,54 @@
+{
+    "id": 1,
+    "interaction": "virtual",
+    "history": [
+        {
+            "role": "user",
+            "content": "Ciao Nau Oggi sono proprio felice"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Che bello sentirtelo dire! [rst] Cosa ti rende così felice oggi?\n"
+        },
+        {
+            "role": "user",
+            "content": "Che ne dici di andare a fare un bel giro al parco che c'è il sole"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Ottima idea! [rst] Mi piacerebbe molto fare una passeggiata al parco.\n"
+        },
+        {
+            "role": "user",
+            "content": "Perfetto andiamo prendi la"
+        },
+        {
+            "role": "system",
+            "content": "[rst] Purtroppo non posso andare in bicicletta, non ho le gambe. [sad] Ma ti posso accompagnare!\n"
+        },
+        {
+            "role": "user",
+            "content": "andiamo subito"
+        },
+        {
+            "role": "system",
+            "content": "[happy] Allora andiamo subito! [rst] Sono emozionato!\n"
+        },
+        {
+            "role": "user",
+            "content": "Ciao"
+        },
+        {
+            "role": "system",
+            "content": "Ciao! [rst] Chi è?\n"
+        },
+        {
+            "role": "user",
+            "content": "Come stai tu subito prima sono molto"
+        },
+        {
+            "role": "system",
+            "content": "[rst] Sembra una bella conversazione. [happy] Sono contento che ti stia divertendo!\n"
+        }
+    ]
+}
