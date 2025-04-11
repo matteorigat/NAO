@@ -1,0 +1,89 @@
+{
+    "id": 8,
+    "bf026412-4f7c-4213-85f1-3c284b71d615": [
+        {
+            "interaction": "virtual",
+            "emotion": "Sadness2",
+            "emotion-recognized": "fear",
+            "valence": "5",
+            "arousal": "3"
+        },
+        {
+            "interaction": "virtual",
+            "emotion": "Fear1",
+            "emotion-recognized": "fear",
+            "valence": "3",
+            "arousal": "5"
+        },
+        {
+            "interaction": "virtual",
+            "emotion": "Sadness3",
+            "emotion-recognized": "sad",
+            "valence": "5",
+            "arousal": "1"
+        },
+        {
+            "interaction": "virtual",
+            "emotion": "Anger2",
+            "emotion-recognized": "angry",
+            "valence": "3",
+            "arousal": "7"
+        },
+        {
+            "interaction": "virtual",
+            "emotion": "Happiness2",
+            "emotion-recognized": "happy",
+            "valence": "5",
+            "arousal": "1"
+        },
+        {
+            "interaction": "virtual",
+            "emotion": "Anger3",
+            "emotion-recognized": "angry",
+            "valence": "3",
+            "arousal": "6"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Happiness3",
+            "emotion-recognized": "happy",
+            "valence": "9",
+            "arousal": "1"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Happiness1",
+            "emotion-recognized": "happy",
+            "valence": "5",
+            "arousal": "1"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Anger1",
+            "emotion-recognized": "sad",
+            "valence": "5",
+            "arousal": "4"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Fear3",
+            "emotion-recognized": "fear",
+            "valence": "1",
+            "arousal": "8"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Fear2",
+            "emotion-recognized": "fear",
+            "valence": "3",
+            "arousal": "6"
+        },
+        {
+            "interaction": "real",
+            "emotion": "Sadness1",
+            "emotion-recognized": "sad",
+            "valence": "2",
+            "arousal": "3"
+        }
+    ]
+}

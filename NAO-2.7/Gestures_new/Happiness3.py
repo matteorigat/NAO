@@ -4,109 +4,33 @@ names = list()
 times = list()
 keys = list()
 
-names.append("HeadPitch")
-times.append([0])
-keys.append([-0.17329])
-
-names.append("HeadYaw")
-times.append([0])
-keys.append([-0.00400687])
-
-names.append("LAnklePitch")
-times.append([0])
-keys.append([0.0871523])
-
-names.append("LAnkleRoll")
-times.append([0])
-keys.append([-0.107881])
-
 names.append("LElbowRoll")
-times.append([0, 0.76])
-keys.append([-0.421949, -0.0523599])
+times.append([0.76])
+keys.append([-0.0523599])
 
 names.append("LElbowYaw")
-times.append([0, 0.76])
-keys.append([-1.20049, -1.24442])
-
-names.append("LHand")
-times.append([0])
-keys.append([0.290728])
-
-names.append("LHipPitch")
-times.append([0])
-keys.append([0.12407])
-
-names.append("LHipRoll")
-times.append([0])
-keys.append([0.115978])
-
-names.append("LHipYawPitch")
-times.append([0])
-keys.append([-0.16949])
-
-names.append("LKneePitch")
-times.append([0])
-keys.append([-0.0920459])
-
-names.append("LShoulderPitch")
-times.append([0])
-keys.append([1.43935])
+times.append([0.76])
+keys.append([-1.24442])
 
 names.append("LShoulderRoll")
-times.append([0, 0.76, 1.6])
-keys.append([0.215447, 0.532325, 0.734784])
-
-names.append("LWristYaw")
-times.append([0])
-keys.append([0.108394])
-
-names.append("RAnklePitch")
-times.append([0])
-keys.append([0.0871523])
-
-names.append("RAnkleRoll")
-times.append([0])
-keys.append([0.107877])
+times.append([0.76, 1.6])
+keys.append([0.532325, 0.734784])
 
 names.append("RElbowRoll")
-times.append([0, 0.76])
-keys.append([0.421949, 0.0349066])
+times.append([0.76])
+keys.append([0.0349066])
 
 names.append("RElbowYaw")
-times.append([0, 0.76])
-keys.append([1.20049, 1.24442])
-
-names.append("RHand")
-times.append([0])
-keys.append([0.290728])
-
-names.append("RHipPitch")
-times.append([0])
-keys.append([0.12407])
-
-names.append("RHipRoll")
-times.append([0])
-keys.append([-0.115972])
-
-names.append("RHipYawPitch")
-times.append([0])
-keys.append([-0.16949])
-
-names.append("RKneePitch")
-times.append([0])
-keys.append([-0.0920459])
+times.append([0.76])
+keys.append([1.24442])
 
 names.append("RShoulderPitch")
-times.append([0, 0.76, 1.6])
-keys.append([1.43935, 0.0139626, -1.01229])
+times.append([0.76, 1.6])
+keys.append([0.0139626, -1.01229])
 
 names.append("RShoulderRoll")
-times.append([0, 0.76, 1.6])
-keys.append([-0.215447, -0.637045, -0.692896])
-
-names.append("RWristYaw")
-times.append([0])
-keys.append([0.0985636])
+times.append([0.76, 1.6])
+keys.append([-0.637045, -0.692896])
 
 def execute_gesture(IP, PORT, reverse=False):
     """Esegue il gesto sulla robot NAO"""
