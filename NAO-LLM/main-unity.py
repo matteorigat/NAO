@@ -90,6 +90,7 @@ def face_tracking():
     cap.release()
     cv2.destroyAllWindows()
 
+# # local tts
 # class TextToSpeech:
 #     def __init__(self, language="it-IT"):
 #         self.engine = pyttsx3.init()  # Inizializza il motore
@@ -108,7 +109,7 @@ def face_tracking():
 #         self.engine.say(text)  # Pronuncia il testo
 #         self.engine.runAndWait()  # Esegui la sintesi vocale
 #
-#
+# # local tts
 # def speak_local_tts(tts, text):
 #     global lastPose
 #     segments = re.split(r'(\[.*?\])', text)
@@ -219,10 +220,10 @@ def speak_and_send_tags(text):
     global lastPose
 
     tag_pose_map = {
-        "happy": ["Happiness1", "Happiness3"],
-        "sad": ["Sadness1", "Sadness3"],
-        "angry": ["Anger1", "Anger2"],
-        "fear": ["Fear1", "Fear2"],
+        "happy": ["Happiness1", "Happiness2","Happiness3"],
+        "sad": ["Sadness1", "Sadness2", "Sadness3"],
+        "angry": ["Anger1", "Anger2", "Anger2"],
+        "fear": ["Fear1", "Fear2", "Fear3"],
         "rst": ["Stand"]
     }
 
@@ -258,15 +259,16 @@ def speak_and_send_tags(text):
 
 
 def main():
-    #tts = TextToSpeech()
+    # tts = TextToSpeech()  # local tts
 
     global dialogue_path
     dialogue = load_dialogue(dialogue_path)
 
-    response = serverLLM.say_to_file("Ciao")
-    if response:
-        playsound(response)
-    #speak_local_tts(tts, "Ciao")
+    response = serverLLM.say_to_file("Ciao")    # real nao tts
+    if response:                                # real nao tts
+        playsound(response)                     # real nao tts
+
+    # speak_local_tts(tts, "Ciao")  # local tts
 
     while True:
         # Ascolta il microfono
@@ -284,8 +286,8 @@ def main():
 
             # Sincronizza i tag con la lettura del testo
             send_message("speaking")
-            speak_and_send_tags(processed_text)
-            #speak_local_tts(tts, processed_text)
+            speak_and_send_tags(processed_text) # real nao tts
+            # speak_local_tts(tts, processed_text) # local tts
                 
             
 

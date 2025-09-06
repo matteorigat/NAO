@@ -14,8 +14,8 @@ app.secret_key = os.urandom(24)
 gestures_dict = {
         "happiness": ["Happiness1", "Happiness2", "Happiness3"],
         "sadness": ["Sadness1", "Sadness2", "Sadness3"],
-        "anger": ["Anger1", "Anger2", "Anger3"],
-        "fear": ["Fear1", "Fear2", "Fear3"]
+        "anger": ["Anger1", "Anger1", "Anger1"],
+        "fear": ["Anger1", "Anger1", "Anger1"]
     }
 
 welcome_int = -1
@@ -87,7 +87,7 @@ def index():
         if random.choice([True, False]):
             welcome_int = 1
         else:
-            welcome_int = 0
+            welcome_int = 1
 
     global gestures_list
     gestures_list = [[], []]
@@ -223,4 +223,4 @@ def submit():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8888, debug=True)
+    app.run(host="0.0.0.0", port=8889, debug=True)

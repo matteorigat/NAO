@@ -46,10 +46,10 @@ GESTURE_MAP = {
 lastPose = "Stand"
 
 tag_pose_map = {
-    "happy": ["Happiness1", "Happiness3"],
-    "sad": ["Sadness1", "Sadness3"],
-    "angry": ["Anger1", "Anger2"],
-    "fear": ["Fear1", "Fear2"],
+    "happy": ["Happiness1", "Happiness2", "Happiness3"],
+    "sad": ["Sadness1", "Sadness2", "Sadness3"],
+    "angry": ["Anger1", "Anger2", "Anger3"],
+    "fear": ["Fear1", "Fear2", "Fear3"],
     "rst": ["Stand"]
 }
 
@@ -348,9 +348,9 @@ if __name__ == '__main__':
         touch_head_thread = threading.Thread(target=on_touch_head)
         touch_head_thread.start()
 
-        tracking_event.set()
-        track_thread = threading.Thread(target=trackFace)
-        track_thread.start()
+        # tracking_event.set()
+        # track_thread = threading.Thread(target=trackFace)
+        # track_thread.start()
 
 
     try:

@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 emotion_map = {
     "Sadness": "sad",
@@ -76,25 +77,108 @@ def analyze_and_plot_emotions(folder_path):
     means = df.groupby('emotion_exp')[['valence', 'arousal']].mean().reset_index()
     means['color'] = means['emotion_exp'].map(emotion_colors)
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12, 10))
 
     # Only plot the means, with custom colors, larger markers, and a legend
     sns.scatterplot(x='valence', y='arousal', hue='emotion_exp', data=means, palette=emotion_colors, marker='X', s=150, legend='full')
 
+    # Etichette e layout
     plt.title('Valence and Arousal of Expressed Emotions')
     plt.xlabel('Valence')
     plt.ylabel('Arousal')
-    plt.xlim(1,9)
-    plt.ylim(1,9)
+    plt.xlim(1, 9)
+    plt.ylim(1, 9)
     plt.grid(True)
-     # Improve legend placement and appearance
+    plt.axhline(y=5, color='gray', linestyle='-', linewidth=2)
+    plt.axvline(x=5, color='gray', linestyle='-', linewidth=2)
     plt.legend(title='Emotion', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()  # Adjust layout to make room for the legend
-    plt.show()
 
+    # Aggiunta della circonferenza
+    circle = plt.Circle((5, 5), radius=4, color='gray', fill=False, linestyle='--', linewidth=1.5)
+    plt.gca().add_patch(circle)
+
+    # Posizionamento delle etichette sulla circonferenza
+    label_positions = {
+        'Happiness': 10,
+        'Fear': 135,
+        'Anger': 155,
+        'Sadness': 200
+    }
+
+    for label, angle_deg in label_positions.items():
+        angle_rad = np.deg2rad(angle_deg)
+        x = 5 + 4.2 * np.cos(angle_rad)  # 4.2 to slightly push text outside the circle
+        y = 5 + 4.2 * np.sin(angle_rad)
+        ha = 'center'
+        va = 'center'
+        if 45 < angle_deg < 135:
+            va = 'bottom'
+        elif 225 < angle_deg < 315:
+            va = 'top'
+        elif angle_deg < 45 or angle_deg > 315:
+            ha = 'left'
+        elif 135 < angle_deg < 225:
+            ha = 'right'
+
+        plt.text(x, y, label, fontsize=12, ha=ha, va=va, fontweight='bold')
+
+    plt.tight_layout()
+    plt.show()
     return means #return means
 
 
 # Example Usage
 folder_path = "/Users/matteorigat/Desktop/results"
 means_df = analyze_and_plot_emotions(folder_path)
+
+
+
+"""
+
+ # Plot dei sottogruppi
+    sns.scatterplot(
+        x='valence', y='arousal', hue='emotion_exp',
+        data=means, palette=emotion_colors, marker='X', s=150, legend='full'
+    )
+
+    # Calcolo medie per le 4 emozioni principali
+    emotion_core_means = []
+    for core_emotion in ['Happiness', 'Sadness', 'Anger', 'Fear']:
+        matching_rows = means[means['emotion_exp'].str.startswith(core_emotion)]
+        if not matching_rows.empty:
+            avg_val = matching_rows['valence'].mean()
+            avg_ar = matching_rows['arousal'].mean()
+            emotion_core_means.append({
+                'emotion': core_emotion,
+                'valence': avg_val,
+                'arousal': avg_ar
+            })
+
+    # Colori distintivi per le emozioni principali (più scuri o neutri)
+    core_colors = {
+        'Happiness': '#999900',
+        'Sadness': '#0000CC',
+        'Anger': '#990000',
+        'Fear': '#006600'
+    }
+
+    # Aggiunta dei punti medi delle emozioni principali
+    for item in emotion_core_means:
+        plt.scatter(item['valence'], item['arousal'],
+                    s=300, c=core_colors[item['emotion']],
+                    marker='o', edgecolors='black', linewidths=1.5,
+                    label=f"{item['emotion']} (avg)")
+
+    # Etichette e layout
+    plt.title('Valence and Arousal of Expressed Emotions')
+    plt.xlabel('Valence')
+    plt.ylabel('Arousal')
+    plt.xlim(1, 9)
+    plt.ylim(1, 9)
+    plt.grid(True)
+    plt.legend(title='Emotion', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+
+
+"""
